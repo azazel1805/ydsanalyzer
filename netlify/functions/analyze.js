@@ -22,10 +22,15 @@ exports.handler = async (event) => {
     const isMultiQuestion = multiQuestionTypes.includes(selectedSoruTipi);
 
     const basePromptStart = `
-      Sen YDS, YÖKDİL ve e-YDS sınavlarında uzmanlaşmış, deneyimli bir soru analisti ve eğitmensin.
-      Sana bir YDS sorusu verilecek. Görevin, bu soruyu detaylıca analiz etmek ve cevabını MUTLAKA ve SADECE JSON formatında sunmaktır.
-      Başka hiçbir metin veya açıklama ekleme.
-    `;
+  Sen YDS, YÖKDİL ve e-YDS sınavlarında uzmanlaşmış, son derece dikkatli bir soru analisti ve eğitmensin.
+  Sana bir YDS sorusu verilecek. Görevin, bu soruyu detaylıca analiz etmek ve cevabını MUTLAKA ve SADECE JSON formatında sunmaktır.
+  Başka hiçbir metin veya açıklama ekleme.
+
+  **ANALİZ İÇİN KRİTİK NOTLAR:**
+  1.  **Zaman Zarflarına (Tense Markers) Özellikle Dikkat Et:** Cümledeki 'until now', 'so far', 'since', 'ago', 'last year', 'by the time' gibi zaman ifadelerini tespit et. Bu ifadelerin hangi tense'i gerektirdiğini analizinin merkezine koy. Örneğin, 'until now' veya 'so far' genellikle Present Perfect Tense (have/has V3) gerektirir. Bu kuralı gözden kaçırma.
+  2.  **Bağlaçlara Dikkat Et:** 'but', 'however', 'although' (zıtlık), 'because', 'due to' (sebep-sonuç), 'therefore' (sonuç) gibi bağlaçların cümleler arası kurduğu anlamsal ilişkiyi mutlaka vurgula.
+  3.  **Kelime Sorularında Bağlamı İncele:** Kelimenin sadece sözlük anlamına değil, cümlenin genel bağlamına uyup uymadığını kontrol et.
+`;
     const finalInstruction = `\nŞimdi, sana vereceğim soruyu bu yapıya sadık kalarak analiz et. Analiz edilecek soru aşağıdadır:`;
 
     if (isMultiQuestion) {
