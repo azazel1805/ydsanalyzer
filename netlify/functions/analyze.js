@@ -1,34 +1,21 @@
-// Google'ın yapay zeka SDK'sını projemize dahil ediyoruz.
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// API anahtarımızı Netlify'da ayarladığımız ortam değişkeninden (environment variable) güvenli bir şekilde alıyoruz.
-// Bu anahtar asla frontend koduna (tarayıcıya) gitmez.
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Netlify'ın bu fonksiyonu çalıştırması için gereken ana handler fonksiyonu.
 exports.handler = async (event) => {
-  // Güvenlik ve standartlar gereği sadece POST metoduyla gelen istekleri kabul ediyoruz.
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  // Kodumuzun tamamını bir try-catch bloğu içine alıyoruz.
-  // Bu sayede herhangi bir beklenmedik hata olursa, uygulama çökmez ve kullanıcıya anlamlı bir mesaj dönebiliriz.
   try {
-    // Frontend'den gelen isteğin body'sini JSON formatından objeye çeviriyoruz.
     const { text, imageData, imageMimeType } = JSON.parse(event.body);
 
-    // Eğer kullanıcı ne metin ne de resim göndermediyse, 400 Bad Request hatası döndürüyoruz.
     if (!text && !imageData) {
       return { statusCode: 400, body: JSON.stringify({ error: 'Lütfen analiz için bir metin veya resim sağlayın.' }) };
     }
     
-    // Kullanacağımız yapay zeka modelini seçiyoruz. gemini-1.5-pro-latest en güncel ve yetenekli modeldir.
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
 
-    // === YAPAY ZEKAYA GÖNDERİLECEK KOMUT (PROMPT) - EN KRİTİK BÖLÜM ===
-    // Yapay zekanın ne yapacağını, hangi rolde olacağını ve cevabını HANGİ FORMATTA vermesi gerektiğini burada net bir şekilde tanımlıyoruz.
-    // JSON formatını zorunlu kılmak, frontend'de veriyi işlememizi çok kolaylaştırır.
     const prompt = `
       Sen YDS, YÖKDİL ve TOEFL gibi İngilizce yeterlilik sınavlarında uzman bir eğitmensin.
       Sana bir soru metni veya sorunun fotoğrafı verilecek. Görevin bu soruyu detaylıca analiz etmek ve cevabını MUTLAKA aşağıdaki JSON formatında sunmaktır.
@@ -64,39 +51,39 @@ exports.handler = async (event) => {
       Analiz edilecek soru aşağıdadır:
     `;
 
-    // Gemini API'sine gönderilecek isteğin parçalarını hazırlıyoruz.
-    const requestParts = [prompt];
-    if (text) {
-        requestParts.push(text);
-    }
-    if (imageData && imageMimeType) {
-        requestParts.push({
-            inlineData: {
-                data: imageData,
-                mimeType: imageMimeType
-            }
-        });
-    }
+    // === DEĞİŞİKLİĞİN YAPILDIĞI YER ===
+    // 'parts' dizisini boş başlatıyoruz ve her elemanı doğru obje formatında ekliyoruz.
+    const requestParts = [];
+    
+    // 1. Parça: Bizim talimatlarımız (prompt)
+    requestParts.push({ text: prompt });
 
-    // Hazırladığımız isteği Gemini API'sine gönderiyoruz.
+    // 2. Parça: Kullanıcının gönderdiği metin veya resim
+    if (text) {
+      requestParts.push({ text: text });
+    } else if (imageData && imageMimeType) {
+      // Resim objesi zaten doğru formatta olduğu için ona dokunmuyoruz.
+      requestParts.push({
+        inlineData: {
+          data: imageData,
+          mimeType: imageMimeType
+        }
+      });
+    }
+    // === DEĞİŞİKLİK SONU ===
+
     const result = await model.generateContent({ contents: [{ parts: requestParts }] });
     const responseText = result.response.text();
     
-    // Gemini'den gelen cevabı JSON'a çevirmek için ayrı bir try-catch bloğu kullanıyoruz.
-    // Bazen API, JSON yerine bir hata metni dönebilir. Bu durumun fonksiyonu çökertmesini engeller.
     let jsonResponse;
     try {
-        // API bazen cevabı ```json ... ``` gibi markdown blokları içinde dönebiliyor. Bunları temizliyoruz.
         const cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
         jsonResponse = JSON.parse(cleanedText);
     } catch (parseError) {
-        // Eğer cevap JSON'a çevrilemezse, Netlify loglarına ham cevabı yazdırıyoruz. Bu, hata ayıklama için çok değerlidir.
         console.error("Gemini'den gelen cevap JSON formatına çevrilemedi. Ham Cevap:", responseText);
-        // Yeni bir hata fırlatarak dıştaki ana catch bloğunun bunu yakalamasını sağlıyoruz.
         throw new Error("Yapay zeka geçerli bir formatta cevap vermedi. Lütfen tekrar deneyin.");
     }
 
-    // Her şey yolunda gittiyse, 200 OK status kodu ile birlikte işlenmiş JSON verisini frontend'e gönderiyoruz.
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -104,11 +91,7 @@ exports.handler = async (event) => {
     };
 
   } catch (error) {
-    // Ana try bloğunda herhangi bir hata yakalanırsa (API hatası, JSON parse hatası vb.),
-    // bu hatayı Netlify loglarına yazdırıyoruz.
     console.error('Netlify fonksiyonunda bir hata oluştu:', error);
-    
-    // Kullanıcıya 500 Internal Server Error kodu ile birlikte anlaşılır bir hata mesajı gönderiyoruz.
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message || 'Yapay zeka sunucusunda genel bir sorun oluştu.' }),
