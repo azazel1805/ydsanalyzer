@@ -1,27 +1,34 @@
-// Google Generative AI SDK'sını import ediyoruz
+// Google'ın yapay zeka SDK'sını projemize dahil ediyoruz.
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// API anahtarını ortam değişkenlerinden güvenli bir şekilde alıyoruz
+// API anahtarımızı Netlify'da ayarladığımız ortam değişkeninden (environment variable) güvenli bir şekilde alıyoruz.
+// Bu anahtar asla frontend koduna (tarayıcıya) gitmez.
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Gelen isteği işleyecek ana fonksiyon
+// Netlify'ın bu fonksiyonu çalıştırması için gereken ana handler fonksiyonu.
 exports.handler = async (event) => {
-  // Sadece POST isteklerine izin ver
+  // Güvenlik ve standartlar gereği sadece POST metoduyla gelen istekleri kabul ediyoruz.
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
+  // Kodumuzun tamamını bir try-catch bloğu içine alıyoruz.
+  // Bu sayede herhangi bir beklenmedik hata olursa, uygulama çökmez ve kullanıcıya anlamlı bir mesaj dönebiliriz.
   try {
+    // Frontend'den gelen isteğin body'sini JSON formatından objeye çeviriyoruz.
     const { text, imageData, imageMimeType } = JSON.parse(event.body);
 
+    // Eğer kullanıcı ne metin ne de resim göndermediyse, 400 Bad Request hatası döndürüyoruz.
     if (!text && !imageData) {
-      return { statusCode: 400, body: JSON.stringify({ error: 'Lütfen metin veya resim sağlayın.' }) };
+      return { statusCode: 400, body: JSON.stringify({ error: 'Lütfen analiz için bir metin veya resim sağlayın.' }) };
     }
     
-    // Gemini 1.5 Pro modelini seçiyoruz
+    // Kullanacağımız yapay zeka modelini seçiyoruz. gemini-1.5-pro-latest en güncel ve yetenekli modeldir.
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
 
-    // GEMINI'YE GÖNDERİLECEK PROMPT (EN ÖNEMLİ KISIM)
+    // === YAPAY ZEKAYA GÖNDERİLECEK KOMUT (PROMPT) - EN KRİTİK BÖLÜM ===
+    // Yapay zekanın ne yapacağını, hangi rolde olacağını ve cevabını HANGİ FORMATTA vermesi gerektiğini burada net bir şekilde tanımlıyoruz.
+    // JSON formatını zorunlu kılmak, frontend'de veriyi işlememizi çok kolaylaştırır.
     const prompt = `
       Sen YDS, YÖKDİL ve TOEFL gibi İngilizce yeterlilik sınavlarında uzman bir eğitmensin.
       Sana bir soru metni veya sorunun fotoğrafı verilecek. Görevin bu soruyu detaylıca analiz etmek ve cevabını MUTLAKA aşağıdaki JSON formatında sunmaktır.
@@ -29,9 +36,9 @@ exports.handler = async (event) => {
       
       JSON Yapısı:
       {
-        "konu": "Sorunun ana konusu (Örn: Tense, Preposition, Bağlaçlar, Vocabulary, Phrasal Verbs)",
+        "konu": "Sorunun ana konusu (Örn: Tense Uyumu, Preposition, Bağlaçlar, Kelime Bilgisi, Phrasal Verbs)",
         "dogruCevap": "Doğru seçeneğin harfi veya kelimesi (Örn: 'C) because of')",
-        "detayliAciklama": "Doğru cevabın neden doğru olduğunu, cümlenin anlamını, hangi dilbilgisi kuralının geçerli olduğunu adım adım, kapsamlı bir şekilde açıkla. Açıklamada geçen önemli kalıpları ve kelimeleri not al.",
+        "detayliAciklama": "Doğru cevabın neden doğru olduğunu, cümlenin anlamını, hangi dilbilgisi kuralının geçerli olduğunu adım adım, kapsamlı bir şekilde açıkla. Açıklamada geçen önemli kalıpları ve kelimeleri not al. Satır atlaması için '\\n' kullan.",
         "digerSecenekler": [
           {
             "secenek": "A) despite",
@@ -57,7 +64,7 @@ exports.handler = async (event) => {
       Analiz edilecek soru aşağıdadır:
     `;
 
-    // İstek parçalarını oluştur (prompt ve varsa resim)
+    // Gemini API'sine gönderilecek isteğin parçalarını hazırlıyoruz.
     const requestParts = [prompt];
     if (text) {
         requestParts.push(text);
@@ -71,15 +78,25 @@ exports.handler = async (event) => {
         });
     }
 
-    // Gemini API'sine isteği gönder
+    // Hazırladığımız isteği Gemini API'sine gönderiyoruz.
     const result = await model.generateContent({ contents: [{ parts: requestParts }] });
     const responseText = result.response.text();
     
-    // Gemini'nin cevabını temizleyip JSON'a çevir
-    // Bazen Gemini cevabı ```json ... ``` bloğu içinde dönebilir.
-    const cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-    const jsonResponse = JSON.parse(cleanedText);
+    // Gemini'den gelen cevabı JSON'a çevirmek için ayrı bir try-catch bloğu kullanıyoruz.
+    // Bazen API, JSON yerine bir hata metni dönebilir. Bu durumun fonksiyonu çökertmesini engeller.
+    let jsonResponse;
+    try {
+        // API bazen cevabı ```json ... ``` gibi markdown blokları içinde dönebiliyor. Bunları temizliyoruz.
+        const cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        jsonResponse = JSON.parse(cleanedText);
+    } catch (parseError) {
+        // Eğer cevap JSON'a çevrilemezse, Netlify loglarına ham cevabı yazdırıyoruz. Bu, hata ayıklama için çok değerlidir.
+        console.error("Gemini'den gelen cevap JSON formatına çevrilemedi. Ham Cevap:", responseText);
+        // Yeni bir hata fırlatarak dıştaki ana catch bloğunun bunu yakalamasını sağlıyoruz.
+        throw new Error("Yapay zeka geçerli bir formatta cevap vermedi. Lütfen tekrar deneyin.");
+    }
 
+    // Her şey yolunda gittiyse, 200 OK status kodu ile birlikte işlenmiş JSON verisini frontend'e gönderiyoruz.
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -87,10 +104,14 @@ exports.handler = async (event) => {
     };
 
   } catch (error) {
-    console.error('Error during Gemini API call:', error);
+    // Ana try bloğunda herhangi bir hata yakalanırsa (API hatası, JSON parse hatası vb.),
+    // bu hatayı Netlify loglarına yazdırıyoruz.
+    console.error('Netlify fonksiyonunda bir hata oluştu:', error);
+    
+    // Kullanıcıya 500 Internal Server Error kodu ile birlikte anlaşılır bir hata mesajı gönderiyoruz.
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Yapay zeka sunucusunda bir sorun oluştu.' }),
+      body: JSON.stringify({ error: error.message || 'Yapay zeka sunucusunda genel bir sorun oluştu.' }),
     };
   }
 };
