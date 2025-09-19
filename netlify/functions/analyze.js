@@ -32,25 +32,46 @@ exports.handler = async (event) => {
       // ÇOKLU SORU TİPLERİ İÇİN PROMPT
       const multiJsonStructure = `
         {
-          "soruTipi": "${selectedSoruTipi}",
-          "anaParagraf": "Soruların dayandığı ana paragrafın metni buraya gelecek.",
+          "soruTipi": "Cloze Test",
+          "anaParagraf": "Soruların dayandığı ana paragrafın tam metni. Boşlukları (---) olarak bırak.",
           "analizler": [
             {
-              "soruNumarasi": "Sorunun paragraftaki numarası (Örn: 17, 18)",
-              "zorlukSeviyesi": "Sorunun YDS standartlarına göre zorluğu (Kolay, Orta, Zor)",
-              "konu": "Bu spesifik sorunun konusu",
-              "dogruCevap": "Bu sorunun doğru cevabı",
-              "detayliAciklama": "Bu sorunun neden doğru olduğu ve paragrafın hangi kısmıyla ilgili olduğu.",
-              "digerSecenekler": [ { "secenek": "A)", "aciklama": "Bu seçeneğin neden yanlış olduğu." } ],
-              "kalıplar": [ { "kalip": "İlgili kalıp", "aciklama": "Kalıp açıklaması." } ]
+              "soruNumarasi": "3",
+              "konu": "Preposition (Edat)",
+              "zorlukSeviyesi": "Kolay",
+              "dogruCevap": "C) With",
+              "detayliAciklama": "'with a 300-year history' kalıbı '300 yıllık bir tarihe sahip olarak' anlamına gelir. Bir özelliğe, bir şeye 'sahip olma' anlamını 'with' edatı verir. Diğer edatlar bu anlamsal bağlantıyı kurmaz.",
+              "digerSecenekler": [ 
+                { "secenek": "A) At", "aciklama": "Belirli bir noktada bulunma bildirir, 'sahip olma' anlamı vermez." },
+                { "secenek": "B) Into", "aciklama": "İçine doğru hareket bildirir, anlamsal olarak uygun değildir." }
+              ],
+              "kalıplar": []
+            },
+            {
+              "soruNumarasi": "4",
+              "konu": "Adverb (Zarf)",
+              "zorlukSeviyesi": "Orta",
+              "dogruCevap": "A) immensely",
+              "detayliAciklama": "Cümle 'Fransız parfümleri ---- geliştirilir' diyor. Boşluğa fiili (developed) niteleyecek bir zarf gelmelidir. 'immensely' kelimesi 'çok büyük ölçüde, son derece' anlamına gelerek cümlenin anlamını en iyi şekilde tamamlar.",
+              "digerSecenekler": [ 
+                { "secenek": "B) abruptly", "aciklama": "'Aniden' anlamına gelir, bir geliştirme süreci için mantıksızdır." },
+                { "secenek": "C) concisely", "aciklama": "'Kısaca, öz bir şekilde' anlamına gelir, anlamsal olarak uymaz." }
+              ],
+              "kalıplar": []
             }
           ]
         }
       `;
       prompt = `
         ${basePromptStart}
-        Sana verilen soru tipi '${selectedSoruTipi}'. Bu tip, tek bir paragrafa bağlı birden çok soru içerir.
-        Lütfen önce ana paragrafı belirle, sonra paragrafla ilgili HER BİR soruyu ayrı ayrı analiz et ve sonucu aşağıdaki JSON formatında bir dizi olarak döndür.
+        Sana verilen soru tipi '${selectedSoruTipi}'. Bu format, içinde birden çok numaralandırılmış boşluk bulunan bir paragraf ve her boşluk için ayrı seçenekler içerir.
+        Görevin:
+        1.  Ana paragrafı tespit et.
+        2.  Paragraftaki TÜM numaralı boşlukları (Örn: (3)----, 4., (5)----) ve her birine ait seçenek gruplarını bul.
+        3.  HER BİR SORU İÇİN ayrı ve tam bir analiz yap.
+        4.  Tüm bu analizleri, aşağıda bir örneği verilen JSON formatında, 'analizler' dizisinin içine ayrı objeler olarak yerleştirerek TEK BİR JSON objesi olarak döndür.
+        
+        ÖRNEK ÇIKTI YAPISI:
         ${multiJsonStructure}
         ${finalInstruction}
       `;
