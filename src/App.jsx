@@ -2,8 +2,6 @@ import { useState } from 'react';
 import axios from 'axios';
 import './App.css';
 
-// Modal ve Tıklanabilir Kalıp fonksiyonları aynı, onları en alta taşıdım.
-
 function App() {
   const [inputText, setInputText] = useState('');
   const [imageFile, setImageFile] = useState(null);
@@ -43,9 +41,7 @@ function App() {
     setIsLoading(true);
     setError('');
     setAnalysisResult(null);
-
     const payload = { selectedSoruTipi: selectedSoruTipi };
-
     if (imageFile) {
       const reader = new FileReader();
       reader.readAsDataURL(imageFile);
@@ -84,6 +80,7 @@ function App() {
   return (
     <div className="App">
       <h1>
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
         YDS Soru Analiz Asistanı
       </h1>
       <div className="input-container">
@@ -101,84 +98,72 @@ function App() {
           <input id="file-upload" type="file" accept="image/*" onChange={handleImageChange} disabled={isLoading} />
           {imageFile && <p className='file-name'>{imageFile.name}</p>}
         </div>
-
         <div className="soru-tipi-selector">
           <label htmlFor="soru-tipi" style={{fontWeight: '600', color: 'var(--text-muted)'}}>Soru Tipi (İsteğe Bağlı):</label>
-          <select
-            id="soru-tipi"
-            value={selectedSoruTipi}
-            onChange={(e) => setSelectedSoruTipi(e.target.value)}
-            disabled={isLoading}
-          >
-            {soruTipleri.map(tip => (
-              <option key={tip.value} value={tip.value}>{tip.label}</option>
-            ))}
+          <select id="soru-tipi" value={selectedSoruTipi} onChange={(e) => setSelectedSoruTipi(e.target.value)} disabled={isLoading}>
+            {soruTipleri.map(tip => (<option key={tip.value} value={tip.value}>{tip.label}</option>))}
           </select>
         </div>
       </div>
-
       <button className="analyze-button" onClick={handleAnalyze} disabled={isLoading || (!inputText && !imageFile)}>
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
         {isLoading ? 'Analiz Ediliyor...' : 'Analiz Et'}
       </button>
 
-      {isLoading && 
-        <div className="loader">
-          <div className="spinner"></div>
-          <p>Yapay zeka sorunuzu analiz ediyor... <br/>Bu işlem birkaç saniye sürebilir.</p>
-        </div>
-      }
+      {isLoading && <div className="loader"><div className="spinner"></div><p>Yapay zeka sorunuzu analiz ediyor... <br/>Bu işlem birkaç saniye sürebilir.</p></div>}
       {error && <div className="error">{error}</div>}
       
       {analysisResult && (
         <div className="analysis-result">
-            <div className='result-section'><h2>Soru Tipi</h2><p><strong>{analysisResult.soruTipi}</strong></p></div>
-            <div className='result-section'><h2>Soru Konusu</h2><p><strong>{analysisResult.konu}</strong></p></div>
-            <div className='result-section'><h2>Detaylı Açıklama</h2>{renderWithClickableKalips(analysisResult.detayliAciklama, analysisResult.kalıplar, handleKalipClick)}<p style={{marginTop: '1rem'}}><strong>Doğru Cevap: {analysisResult.dogruCevap}</strong></p></div>
-            <div className='result-section'><h3>Diğer Seçeneklerin Analizi</h3>{analysisResult.digerSecenekler.map((secenek, index) => (<div key={index} style={{marginBottom: '0.8rem'}}><strong>{secenek.secenek}: </strong><span dangerouslySetInnerHTML={{ __html: secenek.aciklama.replace(/\n/g, '<br />') }} /></div>))}</div>
-            {analysisResult.kalıplar && analysisResult.kalıplar.length > 0 && (<div className='result-section'><h3>Sorudaki Önemli Kalıplar ve Kelimeler</h3><ul style={{ paddingLeft: '20px', listStyleType: 'disc' }}>{analysisResult.kalıplar.map((kalip, index) => (<li key={index} style={{ marginBottom: '0.5rem' }}><strong className="clickable-kalip" onClick={() => handleKalipClick(kalip)}>{kalip.kalip}</strong></li>))}</ul></div>)}
+          {analysisResult.analizler ? (
+            <MultiAnalysisView result={analysisResult} onKalipClick={handleKalipClick} />
+          ) : (
+            <SingleAnalysisView result={analysisResult} onKalipClick={handleKalipClick} />
+          )}
         </div>
       )}
-      
       <KalipModal kalip={selectedKalip} onClose={() => setSelectedKalip(null)} />
     </div>
   );
 }
 
-// === YARDIMCI BİLEŞENLER ===
+const SingleAnalysisView = ({ result, onKalipClick }) => (
+  <>
+    <div className='result-section'><h2>Soru Tipi</h2><p><strong>{result.soruTipi}</strong></p></div>
+    <div className='result-section'><h2>Soru Konusu</h2><p><strong>{result.konu}</strong></p></div>
+    <div className='result-section'><h2>Detaylı Açıklama</h2>{renderWithClickableKalips(result.detayliAciklama, result.kalıplar, onKalipClick)}<p style={{marginTop: '1rem'}}><strong>Doğru Cevap: {result.dogruCevap}</strong></p></div>
+    <div className='result-section'><h3>Diğer Seçeneklerin Analizi</h3>{result.digerSecenekler.map((secenek, index) => (<div key={index} style={{marginBottom: '0.8rem'}}><strong>{secenek.secenek}: </strong><span dangerouslySetInnerHTML={{ __html: secenek.aciklama.replace(/\n/g, '<br />') }} /></div>))}</div>
+    {result.kalıplar && result.kalıplar.length > 0 && (<div className='result-section'><h3>Sorudaki Önemli Kalıplar ve Kelimeler</h3><ul style={{ paddingLeft: '20px', listStyleType: 'disc' }}>{result.kalıplar.map((kalip, index) => (<li key={index} style={{ marginBottom: '0.5rem' }}><strong className="clickable-kalip" onClick={() => onKalipClick(kalip)}>{kalip.kalip}</strong></li>))}</ul></div>)}
+  </>
+);
+
+const MultiAnalysisView = ({ result, onKalipClick }) => (
+  <>
+    <div className='result-section'><h2>Soru Tipi</h2><p><strong>{result.soruTipi}</strong></p></div>
+    {result.anaParagraf && <div className='result-section'><h2>Ana Paragraf</h2><p dangerouslySetInnerHTML={{ __html: result.anaParagraf.replace(/\n/g, '<br />') }}/></div>}
+    
+    {result.analizler.map((analiz, index) => (
+      <div key={index} className="multi-analysis-item">
+        <h4>Soru {analiz.soruNumarasi} Analizi</h4>
+        <div className='result-section'><h5>Soru Konusu</h5><p><strong>{analiz.konu}</strong></p></div>
+        <div className='result-section'><h5>Detaylı Açıklama</h5>{renderWithClickableKalips(analiz.detayliAciklama, analiz.kalıplar, onKalipClick)}<p style={{marginTop: '1rem'}}><strong>Doğru Cevap: {analiz.dogruCevap}</strong></p></div>
+        <div className='result-section'><h6>Diğer Seçeneklerin Analizi</h6>{analiz.digerSecenekler.map((secenek, i) => (<div key={i} style={{marginBottom: '0.8rem'}}><strong>{secenek.secenek}: </strong><span dangerouslySetInnerHTML={{ __html: secenek.aciklama.replace(/\n/g, '<br />') }} /></div>))}</div>
+      </div>
+    ))}
+  </>
+);
+
 const KalipModal = ({ kalip, onClose }) => {
   if (!kalip) return null;
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <h3>{kalip.kalip}</h3>
-        <p dangerouslySetInnerHTML={{ __html: kalip.aciklama.replace(/\n/g, '<br />') }} />
-        <button onClick={onClose} style={{ marginTop: '1rem', backgroundColor: 'var(--primary-color)', color: 'white', border: 'none', padding: '0.8rem 1.5rem', borderRadius: '8px', cursor: 'pointer' }}>
-          Kapat
-        </button>
-      </div>
-    </div>
-  );
+  return (<div className="modal-overlay" onClick={onClose}><div className="modal-content" onClick={(e) => e.stopPropagation()}><h3>{kalip.kalip}</h3><p dangerouslySetInnerHTML={{ __html: kalip.aciklama.replace(/\n/g, '<br />') }} /><button onClick={onClose} style={{ marginTop: '1rem', backgroundColor: 'var(--primary-color)', color: 'white', border: 'none', padding: '0.8rem 1.5rem', borderRadius: '8px', cursor: 'pointer' }}>Kapat</button></div></div>);
 };
 
 const renderWithClickableKalips = (text, kalips, onKalipClick) => {
   if (!text) return null;
-  if (!kalips || kalips.length === 0) {
-    return <p dangerouslySetInnerHTML={{ __html: text.replace(/\n/g, '<br />') }} />;
-  }
+  if (!kalips || kalips.length === 0) { return <p dangerouslySetInnerHTML={{ __html: text.replace(/\n/g, '<br />') }} />; }
   const regex = new RegExp(`(${kalips.map(k => k.kalip.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi');
   const parts = text.split(regex);
-  return (
-    <p>
-      {parts.map((part, index) => {
-        const matchingKalip = kalips.find(k => k.kalip.toLowerCase() === part.toLowerCase());
-        if (matchingKalip) {
-          return <span key={index} className="clickable-kalip" onClick={() => onKalipClick(matchingKalip)}>{part}</span>;
-        }
-        return <span key={index} dangerouslySetInnerHTML={{ __html: part.replace(/\n/g, '<br />') }} />;
-      })}
-    </p>
-  );
+  return (<p>{parts.map((part, index) => { const matchingKalip = kalips.find(k => k.kalip.toLowerCase() === part.toLowerCase()); if (matchingKalip) { return <span key={index} className="clickable-kalip" onClick={() => onKalipClick(matchingKalip)}>{part}</span>; } return <span key={index} dangerouslySetInnerHTML={{ __html: part.replace(/\n/g, '<br />') }} />; })}</p>);
 };
 
 export default App;
