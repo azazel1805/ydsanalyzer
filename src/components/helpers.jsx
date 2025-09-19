@@ -1,4 +1,4 @@
-// src/components/helpers.js
+// src/components/helpers.jsx
 import React from 'react';
 
 export const renderWithClickableKalips = (text, kalips, onKalipClick) => {
