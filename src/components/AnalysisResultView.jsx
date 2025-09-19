@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { renderWithClickableKalips } from './helpers.jsx';
+import { renderWithClickableKalips } from './helpers';
 
 // Bu bileşen, sadece tekli analiz sonuçlarını göstermek içindir.
 const SingleAnalysisView = ({ result, onKalipClick, onReexplain, isReexplaining }) => (
