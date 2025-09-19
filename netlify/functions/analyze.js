@@ -8,7 +8,6 @@ exports.handler = async (event) => {
   }
 
   try {
-    // Frontend'den artık 'selectedSoruTipi' alanını da alıyoruz.
     const { text, imageData, imageMimeType, selectedSoruTipi } = JSON.parse(event.body);
 
     if (!text && !imageData) {
@@ -17,78 +16,82 @@ exports.handler = async (event) => {
     
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
 
-    // === DİNAMİK PROMPT OLUŞTURMA BÖLÜMÜ ===
+    // === DİNAMİK PROMPT OLUŞTURMA ===
     let prompt;
+    const multiQuestionTypes = ["Cloze Test", "Paragraf Soruları (Reading Comprehension)"];
+    const isMultiQuestion = multiQuestionTypes.includes(selectedSoruTipi);
+
     const basePromptStart = `
-      Sen YDS, YÖKDİL ve e-YDS gibi Türkiye'deki İngilizce yeterlilik sınavlarında uzmanlaşmış, deneyimli bir soru analisti ve eğitmensin.
-      Sana bir YDS sorusu verilecek. Görevin, bu soruyu detaylıca analiz etmek ve cevabını MUTLAKA ve SADECE aşağıda tanımlanan JSON formatında sunmaktır.
+      Sen YDS, YÖKDİL ve e-YDS sınavlarında uzmanlaşmış, deneyimli bir soru analisti ve eğitmensin.
+      Sana bir YDS sorusu verilecek. Görevin, bu soruyu detaylıca analiz etmek ve cevabını MUTLAKA ve SADECE JSON formatında sunmaktır.
       Başka hiçbir metin veya açıklama ekleme.
     `;
-
-    const jsonStructure = `
-      JSON Yapısı:
-      {
-        "soruTipi": "Analiz edilen sorunun tipi",
-        "konu": "Sorunun daha spesifik konusu (Örn: Zıtlık Bağlacı, Perfect Modals, Kelime Anlamı, Zaman Uyumu)",
-        "dogruCevap": "Doğru seçeneğin harfi ve içeriği (Örn: 'E) prevalence')",
-        "detayliAciklama": "Doğru cevabın neden doğru olduğunu, soru kökündeki ipuçlarını, cümlenin Türkçe anlamını ve ilgili dilbilgisi kuralını adım adım, kapsamlı bir şekilde açıkla. Satır atlaması için '\\n' kullan.",
-        "digerSecenekler": [
-          { "secenek": "A) utilisation", "aciklama": "Bu seçeneğin neden yanlış olduğunu açıkla." }
-        ],
-        "kalıplar": [
-          { "kalip": "vary according to", "aciklama": "Bu kalıbın anlamını, kullanım yerlerini ve örnek cümlelerini içeren detaylı bir açıklama." }
-        ]
-      }
-    `;
-
     const finalInstruction = `\nŞimdi, sana vereceğim soruyu bu yapıya sadık kalarak analiz et. Analiz edilecek soru aşağıdadır:`;
 
-    if (selectedSoruTipi && selectedSoruTipi !== 'auto') {
-      // KULLANICI BİR TİP SEÇTİYSE: Gemini'ye direkt komut verilir.
+    if (isMultiQuestion) {
+      // ÇOKLU SORU TİPLERİ İÇİN PROMPT
+      const multiJsonStructure = `
+        {
+          "soruTipi": "${selectedSoruTipi}",
+          "anaParagraf": "Soruların dayandığı ana paragrafın metni buraya gelecek.",
+          "analizler": [
+            {
+              "soruNumarasi": "Sorunun paragraftaki numarası (Örn: 17, 18)",
+              "konu": "Bu spesifik sorunun konusu",
+              "dogruCevap": "Bu sorunun doğru cevabı",
+              "detayliAciklama": "Bu sorunun neden doğru olduğu ve paragrafın hangi kısmıyla ilgili olduğu.",
+              "digerSecenekler": [ { "secenek": "A)", "aciklama": "Bu seçeneğin neden yanlış olduğu." } ],
+              "kalıplar": [ { "kalip": "İlgili kalıp", "aciklama": "Kalıp açıklaması." } ]
+            }
+          ]
+        }
+      `;
       prompt = `
         ${basePromptStart}
-        Sana verilen sorunun tipi kullanıcı tarafından '${selectedSoruTipi}' olarak belirtildi.
-        Tüm analizini bu soru tipinin gerekliliklerine odaklanarak yap. 'soruTipi' alanını JSON çıktısında '${selectedSoruTipi}' olarak doldur.
-        ${jsonStructure}
+        Sana verilen soru tipi '${selectedSoruTipi}'. Bu tip, tek bir paragrafa bağlı birden çok soru içerir.
+        Lütfen önce ana paragrafı belirle, sonra paragrafla ilgili HER BİR soruyu ayrı ayrı analiz et ve sonucu aşağıdaki JSON formatında bir dizi olarak döndür.
+        ${multiJsonStructure}
         ${finalInstruction}
       `;
     } else {
-      // OTOMATİK ALGILAMA (VARSAYILAN): Gemini'ye soru tipini bulması söylenir.
-      const soruTipleriListesi = `
-        - Kelime Bilgisi (Vocabulary / Phrasal Verb)
-        - Gramer (Tense, Modal, Preposition, etc.)
-        - Bağlaçlar (Conjunctions)
-        - Cloze Test
-        - Cümle Tamamlama (Sentence Completion)
-        - Çeviri (İngilizce-Türkçe / Türkçe-İngilizce)
-        - Paragraf Soruları (Reading Comprehension)
-        - Diyalog Tamamlama (Dialogue Completion)
-        - Anlamca En Yakın Cümle (Restatement)
-        - Paragraf Tamamlama (Paragraph Completion)
-        - Anlam Bütünlüğünü Bozan Cümle (Irrelevant Sentence)
+      // TEKLİ SORU TİPLERİ İÇİN PROMPT
+       const singleJsonStructure = `
+        {
+          "soruTipi": "Analiz edilen sorunun tipi",
+          "konu": "Sorunun spesifik konusu",
+          "dogruCevap": "Doğru seçenek",
+          "detayliAciklama": "Detaylı açıklama.",
+          "digerSecenekler": [ { "secenek": "A)", "aciklama": "Neden yanlış." } ],
+          "kalıplar": [ { "kalip": "İlgili kalıp", "aciklama": "Kalıp açıklaması." } ]
+        }
       `;
-      prompt = `
-        ${basePromptStart}
-        İlk olarak, soruyu incele ve 'soruTipi' alanını aşağıdaki listeden en uygun olanıyla doldur:
-        ${soruTipleriListesi}
-        Ardından analizinin geri kalanını bu tipe uygun şekilde tamamla.
-        ${jsonStructure}
-        ${finalInstruction}
-      `;
+      if (selectedSoruTipi && selectedSoruTipi !== 'auto') {
+        prompt = `${basePromptStart}\nKullanıcı sorunun tipini '${selectedSoruTipi}' olarak belirtti. Analizini buna göre yap. JSON çıktısında 'soruTipi' alanını '${selectedSoruTipi}' olarak doldur.\n${singleJsonStructure}${finalInstruction}`;
+      } else {
+        const soruTipleriListesi = `
+            - Kelime Bilgisi (Vocabulary / Phrasal Verb)
+            - Gramer (Tense, Modal, Preposition, etc.)
+            - Bağlaçlar (Conjunctions)
+            - Cloze Test
+            - Cümle Tamamlama (Sentence Completion)
+            - Çeviri (İngilizce-Türkçe / Türkçe-İngilizce)
+            - Paragraf Soruları (Reading Comprehension)
+            - Diyalog Tamamlama (Dialogue Completion)
+            - Anlamca En Yakın Cümle (Restatement)
+            - Paragraf Tamamlama (Paragraph Completion)
+            - Anlam Bütünlüğünü Bozan Cümle (Irrelevant Sentence)
+        `;
+        prompt = `${basePromptStart}\nİlk olarak sorunun tipini belirle ve 'soruTipi' alanını şu listeden doldur:\n${soruTipleriListesi}\nSonra analizini yap.\n${singleJsonStructure}${finalInstruction}`;
+      }
     }
 
     const requestParts = [];
     requestParts.push({ text: prompt });
 
     if (text) {
-      requestParts.push({ text: text });
+        requestParts.push({ text: text });
     } else if (imageData && imageMimeType) {
-      requestParts.push({
-        inlineData: {
-          data: imageData,
-          mimeType: imageMimeType
-        }
-      });
+        requestParts.push({ inlineData: { data: imageData, mimeType: imageMimeType } });
     }
 
     const result = await model.generateContent({ contents: [{ parts: requestParts }] });
