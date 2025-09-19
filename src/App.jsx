@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import axios from 'axios';
 import './App.css';
+
+// Kendi dosyalarına taşıdığımız bileşenleri ve yardımcıları import ediyoruz
 import KalipModal from './components/KalipModal';
 import LoadingSkeleton from './components/LoadingSkeleton';
-import AnalysisResultView from './components/AnalysisResultView'; // Henüz oluşturmadık
+import AnalysisResultView from './components/AnalysisResultView';
 import BenzerSoruView from './components/BenzerSoruView';
 
 function App() {
@@ -45,14 +47,7 @@ function App() {
         fileInputRef.current.value = null;
     }
   };
-
-  const handleImageChange = (e) => {
-    if (e.target.files[0]) {
-      setImageFile(e.target.files[0]);
-      setInputText('');
-    }
-  };
-
+  
   const handleAnalyze = async () => {
     if (!inputText && !imageFile) {
       setError('Lütfen bir soru metni girin veya bir fotoğraf seçin.');
@@ -61,41 +56,44 @@ function App() {
     setIsLoading(true);
     setError('');
     setAnalysisResult(null);
+    setBenzerSoru(null);
+
     const payload = { selectedSoruTipi: selectedSoruTipi };
+    
     if (imageFile) {
-      const reader = new FileReader();
-      reader.readAsDataURL(imageFile);
-      reader.onload = async () => {
-        const base64Image = reader.result.split(',')[1];
-        payload.imageData = base64Image;
-        payload.imageMimeType = imageFile.type;
-        await sendRequest(payload);
-      };
-      reader.onerror = () => {
-        setError('Resim dosyası okunurken bir hata oluştu.');
-        setIsLoading(false);
-      };
+        const reader = new FileReader();
+        reader.readAsDataURL(imageFile);
+        reader.onload = async () => {
+            const base64Image = reader.result.split(',')[1];
+            payload.imageData = base64Image;
+            payload.imageMimeType = imageFile.type;
+            await sendRequest(payload);
+        };
+        reader.onerror = () => { 
+            setError('Resim dosyası okunurken bir hata oluştu.'); 
+            setIsLoading(false); 
+        };
     } else {
-      payload.text = inputText;
-      await sendRequest(payload);
+        payload.text = inputText;
+        await sendRequest(payload);
     }
   };
 
   const sendRequest = async (payload) => {
     try {
-      const response = await axios.post('/.netlify/functions/analyze', payload);
-      setAnalysisResult(response.data);
+        const response = await axios.post('/.netlify/functions/analyze', payload);
+        setAnalysisResult(response.data);
+        setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     } catch (err) {
-      const errorMessage = err.response?.data?.error || 'Analiz sırasında beklenmedik bir hata oluştu.';
-      setError(errorMessage);
+        const errorMessage = err.response?.data?.error || 'Analiz sırasında beklenmedik bir hata oluştu.';
+        setError(errorMessage);
     } finally {
-      setIsLoading(false);
+        setIsLoading(false);
     }
   };
   
-  const handleKalipClick = (kalip) => {
-    setSelectedKalip(kalip);
-  };
+  // App.jsx içinden KalipModal ve diğer bileşen tanımlarını sildik,
+  // çünkü artık onları kendi dosyalarından import ediyoruz.
 
   return (
     <div className="App">
@@ -183,44 +181,5 @@ function App() {
     </div>
   );
 }
-
-const SingleAnalysisView = ({ result, onKalipClick }) => (
-  <>
-    <div className='result-section'><h2>Soru Tipi</h2><p><strong>{result.soruTipi}</strong></p></div>
-    <div className='result-section'><h2>Soru Konusu</h2><p><strong>{result.konu}</strong></p></div>
-    <div className='result-section'><h2>Detaylı Açıklama</h2>{renderWithClickableKalips(result.detayliAciklama, result.kalıplar, onKalipClick)}<p style={{marginTop: '1rem'}}><strong>Doğru Cevap: {result.dogruCevap}</strong></p></div>
-    <div className='result-section'><h3>Diğer Seçeneklerin Analizi</h3>{result.digerSecenekler.map((secenek, index) => (<div key={index} style={{marginBottom: '0.8rem'}}><strong>{secenek.secenek}: </strong><span dangerouslySetInnerHTML={{ __html: secenek.aciklama.replace(/\n/g, '<br />') }} /></div>))}</div>
-    {result.kalıplar && result.kalıplar.length > 0 && (<div className='result-section'><h3>Sorudaki Önemli Kalıplar ve Kelimeler</h3><ul style={{ paddingLeft: '20px', listStyleType: 'disc' }}>{result.kalıplar.map((kalip, index) => (<li key={index} style={{ marginBottom: '0.5rem' }}><strong className="clickable-kalip" onClick={() => onKalipClick(kalip)}>{kalip.kalip}</strong></li>))}</ul></div>)}
-  </>
-);
-
-const MultiAnalysisView = ({ result, onKalipClick }) => (
-  <>
-    <div className='result-section'><h2>Soru Tipi</h2><p><strong>{result.soruTipi}</strong></p></div>
-    {result.anaParagraf && <div className='result-section'><h2>Ana Paragraf</h2><p dangerouslySetInnerHTML={{ __html: result.anaParagraf.replace(/\n/g, '<br />') }}/></div>}
-    
-    {result.analizler.map((analiz, index) => (
-      <div key={index} className="multi-analysis-item">
-        <h4>Soru {analiz.soruNumarasi} Analizi</h4>
-        <div className='result-section'><h5>Soru Konusu</h5><p><strong>{analiz.konu}</strong></p></div>
-        <div className='result-section'><h5>Detaylı Açıklama</h5>{renderWithClickableKalips(analiz.detayliAciklama, analiz.kalıplar, onKalipClick)}<p style={{marginTop: '1rem'}}><strong>Doğru Cevap: {analiz.dogruCevap}</strong></p></div>
-        <div className='result-section'><h6>Diğer Seçeneklerin Analizi</h6>{analiz.digerSecenekler.map((secenek, i) => (<div key={i} style={{marginBottom: '0.8rem'}}><strong>{secenek.secenek}: </strong><span dangerouslySetInnerHTML={{ __html: secenek.aciklama.replace(/\n/g, '<br />') }} /></div>))}</div>
-      </div>
-    ))}
-  </>
-);
-
-const KalipModal = ({ kalip, onClose }) => {
-  if (!kalip) return null;
-  return (<div className="modal-overlay" onClick={onClose}><div className="modal-content" onClick={(e) => e.stopPropagation()}><h3>{kalip.kalip}</h3><p dangerouslySetInnerHTML={{ __html: kalip.aciklama.replace(/\n/g, '<br />') }} /><button onClick={onClose} style={{ marginTop: '1rem', backgroundColor: 'var(--primary-color)', color: 'white', border: 'none', padding: '0.8rem 1.5rem', borderRadius: '8px', cursor: 'pointer' }}>Kapat</button></div></div>);
-};
-
-const renderWithClickableKalips = (text, kalips, onKalipClick) => {
-  if (!text) return null;
-  if (!kalips || kalips.length === 0) { return <p dangerouslySetInnerHTML={{ __html: text.replace(/\n/g, '<br />') }} />; }
-  const regex = new RegExp(`(${kalips.map(k => k.kalip.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi');
-  const parts = text.split(regex);
-  return (<p>{parts.map((part, index) => { const matchingKalip = kalips.find(k => k.kalip.toLowerCase() === part.toLowerCase()); if (matchingKalip) { return <span key={index} className="clickable-kalip" onClick={() => onKalipClick(matchingKalip)}>{part}</span>; } return <span key={index} dangerouslySetInnerHTML={{ __html: part.replace(/\n/g, '<br />') }} />; })}</p>);
-};
 
 export default App;
