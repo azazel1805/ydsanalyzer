@@ -14,6 +14,11 @@ function App() {
   const [error, setError] = useState('');
   const [selectedKalip, setSelectedKalip] = useState(null);
   const [selectedSoruTipi, setSelectedSoruTipi] = useState('auto');
+  const [benzerSoru, setBenzerSoru] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  
+  const fileInputRef = useRef(null);
+  const resultsRef = useRef(null);
 
   const soruTipleri = [
     { value: 'auto', label: 'Otomatik Algıla (Varsayılan)' },
@@ -29,6 +34,17 @@ function App() {
     { value: 'Paragraf Tamamlama (Paragraph Completion)', label: 'Paragraf Tamamlama' },
     { value: 'Anlam Bütünlüğünü Bozan Cümle (Irrelevant Sentence)', label: 'Anlam Bütünlüğünü Bozan Cümle' },
   ];
+
+  const handleClear = () => {
+    setInputText('');
+    setImageFile(null);
+    setAnalysisResult(null);
+    setError('');
+    setBenzerSoru(null);
+    if (fileInputRef.current) {
+        fileInputRef.current.value = null;
+    }
+  };
 
   const handleImageChange = (e) => {
     if (e.target.files[0]) {
@@ -87,45 +103,82 @@ function App() {
         <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
         YDS Soru Analiz Asistanı
       </h1>
+
       <div className="input-container">
         <textarea
           placeholder="YDS sorusunu veya paragrafını buraya yapıştırın..."
           value={inputText}
           onChange={(e) => { setInputText(e.target.value); if (imageFile) setImageFile(null); }}
-          disabled={isLoading}
+          disabled={isLoading || isGenerating}
         />
         <div className="file-input-wrapper">
           <label htmlFor="file-upload" className="file-input-label">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
             Soru Fotoğrafı Yükle
           </label>
-          <input id="file-upload" type="file" accept="image/*" onChange={handleImageChange} disabled={isLoading} />
+          <input 
+            id="file-upload" 
+            ref={fileInputRef}
+            type="file" 
+            accept="image/*" 
+            onChange={(e) => {
+              if (e.target.files[0]) {
+                setImageFile(e.target.files[0]);
+                setInputText('');
+              }
+            }} 
+            disabled={isLoading || isGenerating} 
+          />
           {imageFile && <p className='file-name'>{imageFile.name}</p>}
         </div>
         <div className="soru-tipi-selector">
           <label htmlFor="soru-tipi" style={{fontWeight: '600', color: 'var(--text-muted)'}}>Soru Tipi (İsteğe Bağlı):</label>
-          <select id="soru-tipi" value={selectedSoruTipi} onChange={(e) => setSelectedSoruTipi(e.target.value)} disabled={isLoading}>
+          <select 
+            id="soru-tipi" 
+            value={selectedSoruTipi} 
+            onChange={(e) => setSelectedSoruTipi(e.target.value)} 
+            disabled={isLoading || isGenerating}
+          >
             {soruTipleri.map(tip => (<option key={tip.value} value={tip.value}>{tip.label}</option>))}
           </select>
         </div>
       </div>
-      <button className="analyze-button" onClick={handleAnalyze} disabled={isLoading || (!inputText && !imageFile)}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+
+      <button 
+        className="analyze-button" 
+        onClick={handleAnalyze} 
+        disabled={isLoading || isGenerating || (!inputText && !imageFile)}
+      >
         {isLoading ? 'Analiz Ediliyor...' : 'Analiz Et'}
       </button>
 
-      {isLoading && <div className="loader"><div className="spinner"></div><p>Yapay zeka sorunuzu analiz ediyor... <br/>Bu işlem birkaç saniye sürebilir.</p></div>}
-      {error && <div className="error">{error}</div>}
-      
-      {analysisResult && (
-        <div className="analysis-result">
-          {analysisResult.analizler ? (
-            <MultiAnalysisView result={analysisResult} onKalipClick={handleKalipClick} />
-          ) : (
-            <SingleAnalysisView result={analysisResult} onKalipClick={handleKalipClick} />
-          )}
+      {(analysisResult || error) && !isLoading && (
+        <div className="clear-button-wrapper">
+          <button onClick={handleClear} className="clear-button">
+            Temizle & Yeni Soru
+          </button>
         </div>
       )}
+
+      {isLoading && <LoadingSkeleton />}
+      {error && <div className="error">{error}</div>}
+      
+      <div ref={resultsRef}>
+        {analysisResult && (
+            <AnalysisResultView 
+                result={analysisResult} 
+                onKalipClick={setSelectedKalip}
+                originalQuestion={inputText || "Resimdeki soru"}
+                setAnalysisResult={setAnalysisResult}
+                setBenzerSoru={setBenzerSoru}
+                setIsGenerating={setIsGenerating}
+                isGenerating={isGenerating}
+            />
+        )}
+        {isGenerating && <div className="loader"><div className="spinner"></div><p>Benzer soru üretiliyor...</p></div>}
+        {benzerSoru && <BenzerSoruView soru={benzerSoru} />}
+      </div>
+      
       <KalipModal kalip={selectedKalip} onClose={() => setSelectedKalip(null)} />
     </div>
   );
