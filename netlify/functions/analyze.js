@@ -1,0 +1,96 @@
+// Google Generative AI SDK'sını import ediyoruz
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+// API anahtarını ortam değişkenlerinden güvenli bir şekilde alıyoruz
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// Gelen isteği işleyecek ana fonksiyon
+exports.handler = async (event) => {
+  // Sadece POST isteklerine izin ver
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: 'Method Not Allowed' };
+  }
+
+  try {
+    const { text, imageData, imageMimeType } = JSON.parse(event.body);
+
+    if (!text && !imageData) {
+      return { statusCode: 400, body: JSON.stringify({ error: 'Lütfen metin veya resim sağlayın.' }) };
+    }
+    
+    // Gemini 1.5 Pro modelini seçiyoruz
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
+
+    // GEMINI'YE GÖNDERİLECEK PROMPT (EN ÖNEMLİ KISIM)
+    const prompt = `
+      Sen YDS, YÖKDİL ve TOEFL gibi İngilizce yeterlilik sınavlarında uzman bir eğitmensin.
+      Sana bir soru metni veya sorunun fotoğrafı verilecek. Görevin bu soruyu detaylıca analiz etmek ve cevabını MUTLAKA aşağıdaki JSON formatında sunmaktır.
+      Başka hiçbir metin ekleme, sadece ve sadece geçerli bir JSON objesi döndür.
+      
+      JSON Yapısı:
+      {
+        "konu": "Sorunun ana konusu (Örn: Tense, Preposition, Bağlaçlar, Vocabulary, Phrasal Verbs)",
+        "dogruCevap": "Doğru seçeneğin harfi veya kelimesi (Örn: 'C) because of')",
+        "detayliAciklama": "Doğru cevabın neden doğru olduğunu, cümlenin anlamını, hangi dilbilgisi kuralının geçerli olduğunu adım adım, kapsamlı bir şekilde açıkla. Açıklamada geçen önemli kalıpları ve kelimeleri not al.",
+        "digerSecenekler": [
+          {
+            "secenek": "A) despite",
+            "aciklama": "Bu seçeneğin neden yanlış olduğunu açıkla. Örneğin, 'despite bir edattır ve kendisinden sonra isim/Ving alır, ancak burada tam bir cümle (clause) var, bu yüzden uygun değil.'"
+          },
+          {
+            "secenek": "B) although",
+            "aciklama": "Bu seçeneğin neden yanlış olduğunu açıkla."
+          }
+        ],
+        "kalıplar": [
+          {
+            "kalip": "Açıklama metninde geçen önemli bir kalıp veya kelime (Örn: 'in terms of')",
+            "aciklama": "Bu kalıbın anlamını, kullanım yerlerini ve örnek cümlelerini içeren detaylı bir açıklama. (Örn: 'in terms of', '...bakımından', '...açısından' anlamına gelir ve bir konuyu belirli bir yönden ele alırken kullanılır. Örnek: In terms of difficulty, this exam was easier than the last one.)"
+          },
+          {
+            "kalip": "Başka bir önemli kalıp (Örn: 'cope with')",
+            "aciklama": "'cope with' bir phrasal verb'dür ve '...ile başa çıkmak, üstesinden gelmek' anlamına gelir. Zor bir durumla mücadele etmeyi ifade eder. Örnek: She is learning to cope with her new responsibilities."
+          }
+        ]
+      }
+
+      Analiz edilecek soru aşağıdadır:
+    `;
+
+    // İstek parçalarını oluştur (prompt ve varsa resim)
+    const requestParts = [prompt];
+    if (text) {
+        requestParts.push(text);
+    }
+    if (imageData && imageMimeType) {
+        requestParts.push({
+            inlineData: {
+                data: imageData,
+                mimeType: imageMimeType
+            }
+        });
+    }
+
+    // Gemini API'sine isteği gönder
+    const result = await model.generateContent({ contents: [{ parts: requestParts }] });
+    const responseText = result.response.text();
+    
+    // Gemini'nin cevabını temizleyip JSON'a çevir
+    // Bazen Gemini cevabı ```json ... ``` bloğu içinde dönebilir.
+    const cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+    const jsonResponse = JSON.parse(cleanedText);
+
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(jsonResponse),
+    };
+
+  } catch (error) {
+    console.error('Error during Gemini API call:', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Yapay zeka sunucusunda bir sorun oluştu.' }),
+    };
+  }
+};
