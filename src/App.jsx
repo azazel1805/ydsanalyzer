@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import axios from 'axios';
 import './App.css';
+import KalipModal from './components/KalipModal';
+import LoadingSkeleton from './components/LoadingSkeleton';
+import AnalysisResultView from './components/AnalysisResultView'; // Henüz oluşturmadık
+import BenzerSoruView from './components/BenzerSoruView';
 
 function App() {
   const [inputText, setInputText] = useState('');
