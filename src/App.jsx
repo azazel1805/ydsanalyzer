@@ -1,12 +1,8 @@
 import { useState } from 'react';
 import axios from 'axios';
-import './App.css'; // Stil dosyamızı import ediyoruz
+import './App.css';
 
-/**
- * Kalıp detaylarını gösteren bir Modal (pencere) bileşeni.
- * @param {object} kalip - Gösterilecek kalıp objesi ({ kalip, aciklama })
- * @param {function} onClose - Modalı kapatma fonksiyonu
- */
+// Kalıp detaylarını gösteren Modal bileşeni
 const KalipModal = ({ kalip, onClose }) => {
   if (!kalip) return null;
   return (
@@ -23,38 +19,21 @@ const KalipModal = ({ kalip, onClose }) => {
   );
 };
 
-/**
- * Bir metin içindeki belirli kelimeleri (kalıpları) tıklanabilir hale getiren yardımcı fonksiyon.
- * @param {string} text - İşlenecek ana metin
- * @param {array} kalips - Tıklanabilir hale getirilecek kalıpların listesi
- * @param {function} onKalipClick - Bir kalıba tıklandığında çalışacak fonksiyon
- */
+// Bir metin içindeki belirli kelimeleri (kalıpları) tıklanabilir hale getiren yardımcı fonksiyon
 const renderWithClickableKalips = (text, kalips, onKalipClick) => {
   if (!text) return null;
   if (!kalips || kalips.length === 0) {
     return <p dangerouslySetInnerHTML={{ __html: text.replace(/\n/g, '<br />') }} />;
   }
-
-  // Tüm kalıpları içeren bir RegExp oluşturuyoruz (büyük/küçük harf duyarsız)
   const regex = new RegExp(`(${kalips.map(k => k.kalip.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi');
   const parts = text.split(regex);
-
   return (
     <p>
       {parts.map((part, index) => {
         const matchingKalip = kalips.find(k => k.kalip.toLowerCase() === part.toLowerCase());
         if (matchingKalip) {
-          return (
-            <span
-              key={index}
-              className="clickable-kalip"
-              onClick={() => onKalipClick(matchingKalip)}
-            >
-              {part}
-            </span>
-          );
+          return <span key={index} className="clickable-kalip" onClick={() => onKalipClick(matchingKalip)}>{part}</span>;
         }
-        // Metnin geri kalanını satır sonlarını <br> ile değiştirerek render et
         return <span key={index} dangerouslySetInnerHTML={{ __html: part.replace(/\n/g, '<br />') }} />;
       })}
     </p>
@@ -68,11 +47,28 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedKalip, setSelectedKalip] = useState(null);
+  const [selectedSoruTipi, setSelectedSoruTipi] = useState('auto');
+
+  // Frontend'de gösterilecek ve backend'e gönderilecek soru tipleri listesi
+  const soruTipleri = [
+    { value: 'auto', label: 'Otomatik Algıla (Varsayılan)' },
+    { value: 'Kelime Bilgisi (Vocabulary / Phrasal Verb)', label: 'Kelime Bilgisi' },
+    { value: 'Gramer (Tense, Modal, Preposition, etc.)', label: 'Gramer' },
+    { value: 'Bağlaçlar (Conjunctions)', label: 'Bağlaçlar' },
+    { value: 'Cloze Test', label: 'Cloze Test' },
+    { value: 'Cümle Tamamlama (Sentence Completion)', label: 'Cümle Tamamlama' },
+    { value: 'Çeviri (İngilizce-Türkçe / Türkçe-İngilizce)', label: 'Çeviri' },
+    { value: 'Paragraf Soruları (Reading Comprehension)', label: 'Paragraf Soruları' },
+    { value: 'Diyalog Tamamlama (Dialogue Completion)', label: 'Diyalog Tamamlama' },
+    { value: 'Anlamca En Yakın Cümle (Restatement)', label: 'Anlamca En Yakın Cümle' },
+    { value: 'Paragraf Tamamlama (Paragraph Completion)', label: 'Paragraf Tamamlama' },
+    { value: 'Anlam Bütünlüğünü Bozan Cümle (Irrelevant Sentence)', label: 'Anlam Bütünlüğünü Bozan Cümle' },
+  ];
 
   const handleImageChange = (e) => {
     if (e.target.files[0]) {
       setImageFile(e.target.files[0]);
-      setInputText(''); // Resim seçildiğinde metni temizle
+      setInputText('');
     }
   };
 
@@ -81,12 +77,14 @@ function App() {
       setError('Lütfen bir soru metni girin veya bir fotoğraf seçin.');
       return;
     }
-
     setIsLoading(true);
     setError('');
     setAnalysisResult(null);
 
-    const payload = {};
+    // Backend'e gönderilecek veri objesi (payload)
+    const payload = {
+      selectedSoruTipi: selectedSoruTipi // Kullanıcının seçtiği soru tipini ekliyoruz
+    };
 
     if (imageFile) {
       const reader = new FileReader();
@@ -109,11 +107,10 @@ function App() {
 
   const sendRequest = async (payload) => {
     try {
-      // Netlify Function'ımıza POST isteği atıyoruz
       const response = await axios.post('/.netlify/functions/analyze', payload);
       setAnalysisResult(response.data);
     } catch (err) {
-      const errorMessage = err.response?.data?.error || 'Analiz sırasında beklenmedik bir hata oluştu. Lütfen tekrar deneyin.';
+      const errorMessage = err.response?.data?.error || 'Analiz sırasında beklenmedik bir hata oluştu.';
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -126,14 +123,14 @@ function App() {
 
   return (
     <div className="App">
-      <h1>YDS Soru Analiz Asistanı (Gemini 1.5 Pro)</h1>
+      <h1>YDS Soru Analiz Asistanı</h1>
       <div className="input-container">
         <textarea
           placeholder="YDS sorusunu veya paragrafını buraya yapıştırın..."
           value={inputText}
           onChange={(e) => {
             setInputText(e.target.value);
-            if (imageFile) setImageFile(null); // Metin yazılırsa resmi temizle
+            if (imageFile) setImageFile(null);
           }}
           disabled={isLoading}
         />
@@ -142,13 +139,26 @@ function App() {
             veya Soru Fotoğrafı Yükle
           </label>
           <input
-            id="file-upload"
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-            disabled={isLoading}
+            id="file-upload" type="file" accept="image/*"
+            onChange={handleImageChange} disabled={isLoading}
           />
           {imageFile && <p className='file-name'>{imageFile.name}</p>}
+        </div>
+
+        {/* KULLANICININ SORU TİPİNİ SEÇEBİLECEĞİ DROPDOWN MENÜSÜ */}
+        <div className="soru-tipi-selector">
+          <label htmlFor="soru-tipi" style={{fontWeight: 'bold', color: '#555'}}>Soru Tipi (İsteğe Bağlı):</label>
+          <select
+            id="soru-tipi"
+            value={selectedSoruTipi}
+            onChange={(e) => setSelectedSoruTipi(e.target.value)}
+            disabled={isLoading}
+            style={{width: '100%', padding: '0.8rem', marginTop: '0.5rem', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '1rem', backgroundColor: '#fff'}}
+          >
+            {soruTipleri.map(tip => (
+              <option key={tip.value} value={tip.value}>{tip.label}</option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -182,7 +192,6 @@ function App() {
                 {analysisResult.digerSecenekler.map((secenek, index) => (
                     <div key={index} style={{marginBottom: '0.8rem'}}>
                         <strong>{secenek.secenek}: </strong>
-                        {/* Burada paragraf etiketi kullanmıyoruz çünkü her seçenek kendi satırında kalmalı */}
                         <span dangerouslySetInnerHTML={{ __html: secenek.aciklama.replace(/\n/g, '<br />') }} />
                     </div>
                 ))}
