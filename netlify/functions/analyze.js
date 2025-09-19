@@ -37,6 +37,7 @@ exports.handler = async (event) => {
           "analizler": [
             {
               "soruNumarasi": "Sorunun paragraftaki numarası (Örn: 17, 18)",
+              "zorlukSeviyesi": "Sorunun YDS standartlarına göre zorluğu (Kolay, Orta, Zor)",
               "konu": "Bu spesifik sorunun konusu",
               "dogruCevap": "Bu sorunun doğru cevabı",
               "detayliAciklama": "Bu sorunun neden doğru olduğu ve paragrafın hangi kısmıyla ilgili olduğu.",
@@ -58,6 +59,7 @@ exports.handler = async (event) => {
        const singleJsonStructure = `
         {
           "soruTipi": "Analiz edilen sorunun tipi",
+          "zorlukSeviyesi": "Sorunun YDS standartlarına göre zorluğu (Kolay, Orta, Zor)",
           "konu": "Sorunun spesifik konusu",
           "dogruCevap": "Doğru seçenek",
           "detayliAciklama": "Detaylı açıklama.",
