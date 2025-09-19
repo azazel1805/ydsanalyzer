@@ -14,7 +14,7 @@ const SingleAnalysisView = ({ result, onKalipClick, onReexplain, isReexplaining 
         <p><strong>{result.zorlukSeviyesi || "Belirlenmedi"}</strong></p>
     </div>
     <div className='result-section'>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
             <h2>Detaylı Açıklama</h2>
             <button className="action-button" onClick={onReexplain} disabled={isReexplaining}>
                 {isReexplaining ? "Açıklanıyor..." : "Farklı Açıkla"}
@@ -28,19 +28,46 @@ const SingleAnalysisView = ({ result, onKalipClick, onReexplain, isReexplaining 
   </>
 );
 
-// Bu bileşen, sadece çoklu analiz sonuçlarını göstermek içindir.
+// Bu bileşen, sadece çoklu analiz sonuçlarını göstermek içindir. (HATASI DÜZELTİLDİ)
 const MultiAnalysisView = ({ result, onKalipClick }) => (
-    // ... Bu bileşen bir önceki cevaptaki ile aynı ...
+  <>
+    <div className='result-section'><h2>Soru Tipi</h2><p><strong>{result.soruTipi}</strong></p></div>
+    {result.anaParagraf && <div className='result-section'><h2>Ana Paragraf</h2><p dangerouslySetInnerHTML={{ __html: result.anaParagraf.replace(/\n/g, '<br />') }}/></div>}
+    
+    {result.analizler.map((analiz, index) => (
+      <div key={index} className="multi-analysis-item">
+        <h4>Soru {analiz.soruNumarasi} Analizi</h4>
+        <div className='result-section'><h5>Soru Konusu</h5><p><strong>{analiz.konu}</strong></p></div>
+        <div className='result-section'><h5>Zorluk Seviyesi</h5><p><strong>{analiz.zorlukSeviyesi || "Belirlenmedi"}</strong></p></div>
+        <div className='result-section'><h5>Detaylı Açıklama</h5>{renderWithClickableKalips(analiz.detayliAciklama, analiz.kalıplar, onKalipClick)}<p style={{marginTop: '1rem'}}><strong>Doğru Cevap: {analiz.dogruCevap}</strong></p></div>
+        <div className='result-section'><h6>Diğer Seçeneklerin Analizi</h6>{analiz.digerSecenekler.map((secenek, i) => (<div key={i} style={{marginBottom: '0.8rem'}}><strong>{secenek.secenek}: </strong><span dangerouslySetInnerHTML={{ __html: secenek.aciklama.replace(/\n/g, '<br />') }} /></div>))}</div>
+      </div>
+    ))}
+  </>
 );
+
 
 const AnalysisResultView = ({ result, onKalipClick, originalQuestion, setAnalysisResult, setBenzerSoru, setIsGenerating, isGenerating }) => {
     const [copyText, setCopyText] = useState('Analizi Kopyala');
     const [isReexplaining, setIsReexplaining] = useState(false);
 
+    const formatAnalysisToText = () => {
+        if (result.analizler) { // Çoklu analiz formatı
+            let text = `Soru Tipi: ${result.soruTipi}\n\n== ANA PARAGRAF ==\n${result.anaParagraf}\n\n`;
+            result.analizler.forEach(analiz => {
+                text += `--- SORU ${analiz.soruNumarasi} ---\n`;
+                text += `Konu: ${analiz.konu}\nZorluk: ${analiz.zorlukSeviyesi}\nDoğru Cevap: ${analiz.dogruCevap}\nAçıklama: ${analiz.detayliAciklama}\n\n`;
+            });
+            return text;
+        } else { // Tekli analiz formatı
+            let text = `Soru Tipi: ${result.soruTipi}\nZorluk: ${result.zorlukSeviyesi || 'Belirlenmedi'}\n\n== AÇIKLAMA ==\n${result.detayliAciklama}\n\n== DİĞER SEÇENEKLER ==\n`;
+            result.digerSecenekler.forEach(s => { text += `${s.secenek}: ${s.aciklama}\n`; });
+            return text;
+        }
+    };
+
     const handleCopyToClipboard = () => {
-        // Analiz objesini düz metne çevirme mantığı
-        let textToCopy = `Soru Tipi: ${result.soruTipi}\nZorluk: ${result.zorlukSeviyesi}\n\n== AÇIKLAMA ==\n${result.detayliAciklama}\n\n== DİĞER SEÇENEKLER ==\n`;
-        result.digerSecenekler.forEach(s => { textToCopy += `${s.secenek}: ${s.aciklama}\n`; });
+        const textToCopy = formatAnalysisToText();
         navigator.clipboard.writeText(textToCopy).then(() => {
             setCopyText('Kopyalandı!');
             setTimeout(() => setCopyText('Analizi Kopyala'), 2000);
@@ -52,8 +79,8 @@ const AnalysisResultView = ({ result, onKalipClick, originalQuestion, setAnalysi
         setBenzerSoru(null);
         try {
             const response = await axios.post('/.netlify/functions/generateSimilar', {
-                konu: result.konu,
-                zorlukSeviyesi: result.zorlukSeviyesi,
+                konu: result.konu || result.analizler[0].konu, // Tekli veya çokludan al
+                zorlukSeviyesi: result.zorlukSeviyesi || result.analizler[0].zorlukSeviyesi,
                 soruTipi: result.soruTipi
             });
             setBenzerSoru(response.data);
