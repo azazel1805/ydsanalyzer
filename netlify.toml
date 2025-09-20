@@ -2,12 +2,9 @@
   command = "npm run build"
   publish = "dist"
   functions = "netlify/functions"
-
-# === YENİ EKLENEN BÖLÜM ===
-[build.environment]
-  # Bu anahtarları Netlify'ın güvenlik taramasından hariç tutmasını söylüyoruz.
-  # Bunlar public anahtarlar olduğu için bu işlem güvenlidir.
-  # Her anahtarın adını tırnak içinde ve virgülle ayırarak yaz.
+  
+  # Güvenlik taramasından hariç tutulacak anahtarları BURAYA yazıyoruz.
+  # Bu, ana [build] bloğunun bir parçasıdır.
   SECRETS_SCAN_OMIT_KEYS = [
     "VITE_FIREBASE_API_KEY",
     "VITE_FIREBASE_APP_ID",
@@ -16,7 +13,6 @@
     "VITE_FIREBASE_PROJECT_ID",
     "VITE_FIREBASE_STORAGE_BUCKET"
   ]
-# === YENİ BÖLÜM SONU ===
 
 [[redirects]]
   from = "/api/*"
