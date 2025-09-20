@@ -58,7 +58,45 @@ exports.handler = async (event) => {
         ${multiJsonStructure}
         ${finalInstruction}
       `;
-    } else {
+    }
+    else if (selectedSoruTipi === 'Anlam Bütünlüğünü Bozan Cümle (Irrelevant Sentence)') {
+    const irrelevantSentenceJsonStructure = `
+      {
+        "soruTipi": "Anlam Bütünlüğünü Bozan Cümle (Irrelevant Sentence)",
+        "analizSüreci": {
+            "adim_1_ana_tema": "Paragrafın ana temasını veya odak noktasını tek bir cümle ile özetle.",
+            "adim_2_cumle_1_iliskisi": "1. cümlenin bu ana temayla ilişkisini açıkla.",
+            "adim_3_cumle_2_iliskisi": "2. cümlenin bir önceki cümleyle ve ana temayla ilişkisini açıkla.",
+            "adim_4_cumle_3_iliskisi": "3. cümlenin bir önceki cümleyle ve ana temayla ilişkisini açıkla.",
+            "adim_5_cumle_4_iliskisi": "4. cümlenin bir önceki cümleyle ve ana temayla ilişkisini açıkla.",
+            "adim_6_cumle_5_iliskisi": "5. cümlenin bir önceki cümleyle ve ana temayla ilişkisini açıkla.",
+            "adim_7_sonuc": "Yukarıdaki adımlara dayanarak, hangi cümlenin fikir akışını bozduğunu ve nedenini net bir şekilde belirt."
+        },
+        "konu": "Paragrafın genel konusu",
+        "zorlukSeviyesi": "Kolay/Orta/Zor",
+        "dogruCevap": "Doğru seçeneğin harfi ve numarası (Örn: D) IV)",
+        "detayliAciklama": "'adim_7_sonuc' bölümünde ulaştığın nihai açıklamayı buraya yaz.",
+        "digerSecenekler": [
+            { "secenek": "A) I", "aciklama": "Bu cümlenin neden akışı bozmadığını kısaca belirt." },
+            { "secenek": "B) II", "aciklama": "Bu cümlenin neden akışı bozmadığını kısaca belirt." }
+        ],
+        "kalıplar": []
+      }
+    `;
+    prompt = `
+        ${basePromptStart}
+        Sana verilen soru tipi 'Anlam Bütünlüğünü Bozan Cümle'.
+        Bu soruyu çözmek için, senden ADIM ADIM bir analiz süreci izlemeni istiyorum.
+        Analizini doğrudan yapmak yerine, cevabını aşağıdaki JSON yapısını doldurarak oluştur.
+        Özellikle 'analizSüreci' objesini adım adım doldurman çok önemli. Bu süreç, doğru sonuca ulaşmanı sağlayacaktır.
+        'detayliAciklama' alanına, 'analizSüreci.adim_7_sonuc' bölümünde vardığın sonucu yaz.
+        
+        JSON Yapısı:
+        ${irrelevantSentenceJsonStructure}
+        ${finalInstruction}
+    `;
+} 
+    else {
       // TEKLİ SORU İÇİN PROMPT
       const singleJsonStructure = `
         {
