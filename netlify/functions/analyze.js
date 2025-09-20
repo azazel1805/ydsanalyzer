@@ -27,7 +27,8 @@ exports.handler = async (event) => {
       **ANALİZ İÇİN KRİTİK NOTLAR:**
       1.  **Zaman Zarflarına Dikkat Et:** Cümledeki 'until now', 'so far', 'ago' gibi zaman ifadelerini tespit et ve analizinde kullan. 'until now' genellikle Present Perfect Tense (have/has V3) gerektirir.
       2.  **Bağlaçlara Odaklan:** Zıtlık (but, although), sebep-sonuç (because, due to) gibi bağlaçların anlamsal ilişkisini vurgula.
-    `;
+      3.  **Anlam Bütünlüğünü Bozan Cümle Sorularında:** Paragrafın **ana temasını TEK BİR CÜMLEDE** özetle. Sonra her bir cümlenin bu ana temayla doğrudan ilişkili olup olmadığını kontrol et. Konunun genelinden (örn: tarih) daha spesifik bir alt konuya (örn: tarihi mekanların dijital canlandırılması) odaklanıldığını gözden kaçırma. Sadece anahtar kelime tekrarına değil, **fikir akışına** odaklan.
+`;
         const finalInstruction = `\nAnaliz edilecek metin aşağıdadır:`;
 
     if (isMultiQuestion) {
