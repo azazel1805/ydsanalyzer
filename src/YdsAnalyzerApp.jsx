@@ -1,14 +1,17 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
-import './App.css';
+import { db } from './firebase'; // Firebase için doğru import
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
-// Kendi dosyalarına taşıdığımız bileşenleri ve yardımcıları import ediyoruz
+// Bileşenleri import ediyoruz
 import KalipModal from './components/KalipModal';
 import LoadingSkeleton from './components/LoadingSkeleton';
 import AnalysisResultView from './components/AnalysisResultView';
 import BenzerSoruView from './components/BenzerSoruView';
 
-function App() {
+// App() yerine YdsAnalyzerApp({ user }) olarak değiştiriyoruz.
+// 'user' objesi, kimin veri kaydettiğini bilmemiz için gerekli.
+function YdsAnalyzerApp({ user }) {
   const [inputText, setInputText] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
@@ -83,29 +86,44 @@ function App() {
     try {
         const response = await axios.post('/.netlify/functions/analyze', payload);
         setAnalysisResult(response.data);
-        setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-      await addDoc(collection(db, "analyses"), {
+
+        // --- DÜZELTİLMİŞ VE KONSOL LOG'LARI EKLENMİŞ BÖLÜM ---
+        console.log("Analiz başarılı. Firestore'a kaydetme deneniyor...");
+
+        if (user && user.uid) {
+            await addDoc(collection(db, "analyses"), {
                 userId: user.uid, // Giriş yapan kullanıcının ID'si
                 createdAt: serverTimestamp(), // Sunucu zamanı
                 questionText: payload.text || 'Görselden analiz edildi',
                 analysisData: response.data, // Gemini'den gelen JSON
                 isMistake: false
             });
+            console.log("Başarıyla Firestore'a kaydedildi!");
+        } else {
+            // Bu uyarı, bir şeylerin çok yanlış gittiğini gösterir, çünkü bu bileşen sadece
+            // giriş yapmış kullanıcılar için render edilmeli.
+            console.warn("Kullanıcı (user) bilgisi bulunamadı! Veritabanına kaydetme işlemi atlanıyor.");
+            setError("Kullanıcı oturumu bulunamadığı için sonuçlar kaydedilemedi.");
+        }
+        // --- DÜZELTME SONU ---
+        
+        setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     } catch (err) {
+        // Hataları daha detaylı loglayalım
+        console.error("sendRequest fonksiyonunda hata:", err);
+        if(err.code && err.message) { // Firebase hatası mı kontrol et
+            console.error("Firebase Hatası Detayları:", err.code, err.message);
+        }
         const errorMessage = err.response?.data?.error || 'Analiz sırasında beklenmedik bir hata oluştu.';
         setError(errorMessage);
     } finally {
         setIsLoading(false);
     }
   };
-  
-  // App.jsx içinden KalipModal ve diğer bileşen tanımlarını sildik,
-  // çünkü artık onları kendi dosyalarından import ediyoruz.
 
   return (
     <div className="App">
       <h1>
-        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
         YDS Soru Analiz Asistanı
       </h1>
 
@@ -189,4 +207,4 @@ function App() {
   );
 }
 
-export default App;
+export default YdsAnalyzerApp;
