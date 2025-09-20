@@ -139,3 +139,62 @@ input[type="file"] { display: none; }
 .clear-button-wrapper { margin-top: 1rem; text-align: center; }
 .clear-button { background: none; border: none; color: var(--text-muted); text-decoration: underline; cursor: pointer; font-size: 0.9rem; }
 .clear-button:hover { color: var(--error-color); }
+/* === PAGE CONTAINER STYLES === */
+.page-container {
+  width: 100%;
+  max-width: 1000px; /* Geniş sayfa için daha fazla alan */
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.page-container h1 {
+    color: var(--text-color);
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+}
+
+/* === DASHBOARD STYLES === */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.stat-card {
+    background-color: var(--container-bg);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    border: 1px solid #E5E7EB;
+    text-align: center;
+}
+
+.stat-card-large {
+    grid-column: 1 / -1; /* Geniş kartların tüm satırı kaplamasını sağla */
+    background-color: var(--container-bg);
+    padding: 2rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    border: 1px solid #E5E7EB;
+}
+
+.stat-card h2 {
+    margin-top: 0;
+    font-size: 1.2rem;
+    color: var(--text-muted);
+}
+
+.stat-number {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin: 0.5rem 0 0 0;
+}
+
+/* Mobil için dashboard grid ayarı */
+@media (max-width: 640px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr; /* Mobilde tek sütun */
+    }
+}
