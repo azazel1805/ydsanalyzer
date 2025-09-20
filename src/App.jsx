@@ -3,13 +3,12 @@ import React from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from './firebase';
 
-import AppRouter from './Router'; // Yeni Router bileşenimizi import ediyoruz
+import AppRouter from './Router';
 import './App.css';
 
 function App() {
   const [user, loading, error] = useAuthState(auth);
   
-  // Firebase kimlik doğrulama durumunu kontrol ederken gösterilecek ekran
   if (loading) {
     return (
         <div style={{ 
@@ -17,16 +16,14 @@ function App() {
             justifyContent: 'center', 
             alignItems: 'center', 
             height: '100vh', 
-            fontSize: '1.2rem',
             fontFamily: 'sans-serif',
-            color: '#555'
+            fontSize: '1.2rem'
         }}>
-            Uygulama Yükleniyor...
+            Oturum durumu kontrol ediliyor...
         </div>
     );
   }
 
-  // Beklenmedik bir hata olursa
   if (error) {
     return (
         <div style={{ 
@@ -35,13 +32,13 @@ function App() {
             alignItems: 'center', 
             height: '100vh' 
         }}>
-            Bir hata oluştu: {error.message}
+            Kimlik doğrulamada bir hata oluştu: {error.message}
         </div>
     )
   }
 
-  // Yükleme bittiğinde ve hata olmadığında, tüm yönlendirme mantığını içeren
-  // AppRouter bileşenini render et.
+  // Yükleme bittiğinde ve hata olmadığında, AppRouter'ı render et.
+  // user objesinin null veya dolu olmasıyla artık AppRouter ilgilenecek.
   return <AppRouter />;
 }
 
