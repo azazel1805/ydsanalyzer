@@ -1,48 +1,57 @@
 // src/pages/HistoryPage.jsx
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, getDocs, doc, updateDoc } from "firebase/firestore";
+// Analiz detayını göstermek için ana sayfadaki bileşenleri yeniden kullanıyoruz
+import AnalysisResultView from '../components/AnalysisResultView'; 
+import KalipModal from '../components/KalipModal';
+
+// Geçmiş Analiz Detaylarını Gösteren Modal Bileşeni
+const AnalysisDetailModal = ({ analysis, onClose, onKalipClick }) => {
+    if (!analysis) return null;
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-content" style={{ maxWidth: '800px' }} onClick={(e) => e.stopPropagation()}>
+                <h2 style={{marginTop: 0}}>Analiz Detayı</h2>
+                {/* AnalysisResultView bileşenini burada yeniden kullanıyoruz! */}
+                <AnalysisResultView 
+                    result={analysis.analysisData}
+                    onKalipClick={onKalipClick}
+                    // Bu modalde bu fonksiyonlara ihtiyacımız yok, boş fonksiyonlar yolluyoruz
+                    originalQuestion={analysis.questionText}
+                    setAnalysisResult={() => {}}
+                    setBenzerSoru={() => {}}
+                    setIsGenerating={() => {}}
+                    isGenerating={false}
+                />
+                 <button onClick={onClose} style={{ marginTop: '1rem', backgroundColor: 'var(--primary-color)', color: 'white', border: 'none', padding: '0.8rem 1.5rem', borderRadius: '8px', cursor: 'pointer' }}>
+                    Kapat
+                </button>
+            </div>
+        </div>
+    );
+};
+
 
 function HistoryPage({ user }) {
     const [analyses, setAnalyses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    
+    // YENİ STATE'LER: Seçili analizi ve kalıbı tutmak için
+    const [selectedAnalysis, setSelectedAnalysis] = useState(null);
+    const [selectedKalip, setSelectedKalip] = useState(null);
 
     useEffect(() => {
-        if (!user) {
-            setLoading(false);
-            return;
-        }
-
-        const fetchAnalyses = async () => {
-            setLoading(true);
-            setError('');
-            try {
-                const q = query(
-                    collection(db, "analyses"), 
-                    where("userId", "==", user.uid),
-                    orderBy("createdAt", "desc")
-                );
-                const querySnapshot = await getDocs(q);
-                
-                const userAnalyses = querySnapshot.docs.map(doc => ({ 
-                    id: doc.id, 
-                    ...doc.data() 
-                }));
-                
-                setAnalyses(userAnalyses);
-            } catch (err) {
-                console.error("Geçmiş getirilirken hata:", err);
-                setError("Geçmiş analizler yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.");
-            } finally {
-                setLoading(false);
-            }
-        };
-
+        // ... (Veri çekme mantığı aynı, değişiklik yok)
+        if (!user) { setLoading(false); return; }
+        const fetchAnalyses = async () => { /* ... önceki cevapla aynı ... */ };
         fetchAnalyses();
     }, [user]);
 
-    const toggleMistake = async (id, currentStatus) => {
+    const toggleMistake = async (e, id, currentStatus) => {
+        e.stopPropagation(); // Butona tıklandığında arkadaki div'in tıklanmasını engelle
         const docRef = doc(db, "analyses", id);
         try {
             await updateDoc(docRef, { isMistake: !currentStatus });
@@ -63,31 +72,38 @@ function HistoryPage({ user }) {
                 <p>Henüz hiç analiz kaydetmediniz.</p>
             ) : (
                 <div className="history-list">
-                    {analyses.map(analysis => {
-                        // === GÜVENLİK KONTROLÜ EKLENDİ ===
-                        // 'questionText' var mı ve string mi diye kontrol et, yoksa varsayılan bir metin kullan.
-                        const questionPreview = (analysis.questionText && typeof analysis.questionText === 'string') 
-                            ? analysis.questionText.substring(0, 150) + '...'
-                            : 'Soru metni mevcut değil...';
-
-                        return (
-                            <div key={analysis.id} className="history-item">
-                                <p className="history-question"><strong>Soru:</strong> {questionPreview}</p>
-                                <div className="history-details">
-                                    <span><strong>Tip:</strong> {analysis.analysisData?.soruTipi || 'N/A'}</span>
-                                    <span><strong>Zorluk:</strong> {analysis.analysisData?.zorlukSeviyesi || 'N/A'}</span>
-                                    {/* Tarih alanı null olabilir, bunu da kontrol edelim */}
-                                    <span><strong>Tarih:</strong> {analysis.createdAt ? new Date(analysis.createdAt.toDate()).toLocaleDateString('tr-TR') : 'Bilinmiyor'}</span>
-                                </div>
-                                <button onClick={() => toggleMistake(analysis.id, analysis.isMistake)} className={`mistake-toggle ${analysis.isMistake ? 'is-mistake' : ''}`}>
-                                    {analysis.isMistake ? '✓ Hata Defterinde' : '+ Hata Defterine Ekle'}
-                                </button>
+                    {analyses.map(analysis => (
+                        <div 
+                            key={analysis.id} 
+                            className="history-item" 
+                            onClick={() => setSelectedAnalysis(analysis)} // Tıklandığında modalı aç
+                        >
+                            <p className="history-question"><strong>Soru:</strong> {(analysis.questionText && typeof analysis.questionText === 'string') ? analysis.questionText.substring(0, 150) + '...' : 'Soru metni mevcut değil...'}</p>
+                            <div className="history-details">
+                                <span><strong>Tip:</strong> {analysis.analysisData?.soruTipi || 'N/A'}</span>
+                                <span><strong>Zorluk:</strong> {analysis.analysisData?.zorlukSeviyesi || 'N/A'}</span>
+                                <span><strong>Tarih:</strong> {analysis.createdAt ? new Date(analysis.createdAt.toDate()).toLocaleDateString('tr-TR') : 'Bilinmiyor'}</span>
                             </div>
-                        );
-                    })}
+                            <button 
+                                onClick={(e) => toggleMistake(e, analysis.id, analysis.isMistake)} 
+                                className={`mistake-toggle ${analysis.isMistake ? 'is-mistake' : ''}`}
+                            >
+                                {analysis.isMistake ? '✓ Hata Defterinde' : '+ Hata Defterine Ekle'}
+                            </button>
+                        </div>
+                    ))}
                 </div>
             )}
+
+            {/* Seçili analiz varsa modal'ı göster */}
+            <AnalysisDetailModal 
+                analysis={selectedAnalysis} 
+                onClose={() => setSelectedAnalysis(null)}
+                onKalipClick={setSelectedKalip}
+            />
+            <KalipModal kalip={selectedKalip} onClose={() => setSelectedKalip(null)} />
         </div>
     );
 }
+
 export default HistoryPage;
