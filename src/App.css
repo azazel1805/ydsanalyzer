@@ -283,3 +283,66 @@ input[type="file"] { display: none; }
   background-color: var(--primary-color);
   color: white;
 }
+/* === HISTORY PAGE STYLES === */
+.history-list { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 1rem; 
+}
+
+.history-item { 
+    background: #fff; 
+    padding: 1.5rem; 
+    border-radius: 8px; 
+    box-shadow: var(--shadow); 
+    border-left: 4px solid var(--primary-color); 
+    cursor: pointer; /* Tıklanabilir olduğunu belirtir */
+    transition: all 0.2s ease-in-out;
+    position: relative; /* Buton konumlandırması için */
+}
+
+.history-item:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    border-left-color: var(--success-color);
+}
+
+.history-question {
+    font-weight: 500;
+    margin-top: 0;
+}
+
+.history-details { 
+    display: flex; 
+    flex-wrap: wrap;
+    gap: 1.5rem; 
+    color: var(--text-muted); 
+    font-size: 0.9rem; 
+    margin-top: 1rem; 
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.mistake-toggle {
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    color: #555;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: absolute; /* Sağ üst köşeye konumlandır */
+    top: 1.5rem;
+    right: 1.5rem;
+}
+
+.mistake-toggle:hover {
+    background-color: #e0e0e0;
+}
+
+.mistake-toggle.is-mistake { 
+    background-color: var(--success-color); 
+    color: white; 
+    border-color: var(--success-color);
+}
