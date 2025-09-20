@@ -1,12 +1,47 @@
-// src/pages/HistoryPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, getDocs, doc, updateDoc } from "firebase/firestore";
-import { renderWithClickableKalips } from '../components/helpers.jsx';
-import KalipModal from '../components/KalipModal';
+
+// === YARDIMCI BİLEŞENLER VE FONKSİYONLAR (Doğrudan bu dosyanın içine alıyoruz) ===
+
+// KalipModal bileşeni
+const KalipModal = ({ kalip, onClose }) => {
+  if (!kalip) return null;
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <h3>{kalip.kalip}</h3>
+        <p dangerouslySetInnerHTML={{ __html: kalip.aciklama.replace(/\n/g, '<br />') }} />
+        <button onClick={onClose} style={{ marginTop: '1rem', backgroundColor: 'var(--primary-color)', color: 'white', border: 'none', padding: '0.8rem 1.5rem', borderRadius: '8px', cursor: 'pointer' }}>
+          Kapat
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Tıklanabilir kalıp render fonksiyonu
+const renderWithClickableKalips = (text, kalips, onKalipClick) => {
+  if (!text) return null;
+  if (!kalips || kalips.length === 0) {
+    return <p dangerouslySetInnerHTML={{ __html: text.replace(/\n/g, '<br />') }} />;
+  }
+  const regex = new RegExp(`(${kalips.map(k => k.kalip.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi');
+  const parts = text.split(regex);
+  return (
+    <p>
+      {parts.map((part, index) => {
+        const matchingKalip = kalips.find(k => k.kalip.toLowerCase() === part.toLowerCase());
+        if (matchingKalip) {
+          return <span key={index} className="clickable-kalip" onClick={() => onKalipClick(matchingKalip)}>{part}</span>;
+        }
+        return <span key={index} dangerouslySetInnerHTML={{ __html: part.replace(/\n/g, '<br />') }} />;
+      })}
+    </p>
+  );
+};
 
 // Geçmiş Analiz Detaylarını Gösteren Modal Bileşeni
-// Bu, AnalysisResultView'a daha basit bir alternatiftir.
 const AnalysisDetailModal = ({ analysis, onClose, onKalipClick }) => {
     if (!analysis) return null;
     const result = analysis.analysisData;
@@ -19,7 +54,7 @@ const AnalysisDetailModal = ({ analysis, onClose, onKalipClick }) => {
                     <div className='result-section'><h2>Soru Tipi</h2><p><strong>{result.soruTipi}</strong></p></div>
                     <div className='result-section'><h2>Zorluk Seviyesi</h2><p><strong>{result.zorlukSeviyesi || "N/A"}</strong></p></div>
                     <div className='result-section'><h2>Detaylı Açıklama</h2>{renderWithClickableKalips(result.detayliAciklama, result.kalıplar, onKalipClick)}<p style={{marginTop: '1rem'}}><strong>Doğru Cevap: {result.dogruCevap}</strong></p></div>
-                    <div className='result-section'><h3>Diğer Seçeneklerin Analizi</h3>{result.digerSecenekler.map((secenek, index) => (<div key={index} style={{marginBottom: '0.8rem'}}><strong>{secenek.secenek}: </strong><span dangerouslySetInnerHTML={{ __html: secenek.aciklama.replace(/\n/g, '<br />') }} /></div>))}</div>
+                    {result.digerSecenekler && <div className='result-section'><h3>Diğer Seçeneklerin Analizi</h3>{result.digerSecenekler.map((secenek, index) => (<div key={index} style={{marginBottom: '0.8rem'}}><strong>{secenek.secenek}: </strong><span dangerouslySetInnerHTML={{ __html: secenek.aciklama.replace(/\n/g, '<br />') }} /></div>))}</div>}
                 </div>
                 <button onClick={onClose} style={{ marginTop: '1rem', backgroundColor: 'var(--primary-color)', color: 'white', border: 'none', padding: '0.8rem 1.5rem', borderRadius: '8px', cursor: 'pointer' }}>
                     Kapat
@@ -29,6 +64,8 @@ const AnalysisDetailModal = ({ analysis, onClose, onKalipClick }) => {
     );
 };
 
+
+// === ANA HISTORYPAGE BİLEŞENİ ===
 function HistoryPage({ user }) {
     const [analyses, setAnalyses] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -36,7 +73,6 @@ function HistoryPage({ user }) {
     const [selectedAnalysis, setSelectedAnalysis] = useState(null);
     const [selectedKalip, setSelectedKalip] = useState(null);
 
-    // useCallback ile fonksiyonun gereksiz yere yeniden oluşturulmasını engelliyoruz.
     const fetchAnalyses = useCallback(async () => {
         if (!user) {
             setLoading(false);
@@ -66,7 +102,6 @@ function HistoryPage({ user }) {
         }
     }, [user]);
 
-    // Sadece component ilk yüklendiğinde veri çek.
     useEffect(() => {
         fetchAnalyses();
     }, [fetchAnalyses]);
