@@ -7,19 +7,37 @@ exports.handler = async (event) => {
   try {
     const { konu, zorlukSeviyesi, soruTipi } = JSON.parse(event.body);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
+    
+    // === GELİŞTİRİLMİŞ PROMPT ===
     const prompt = `
-      Sen bir YDS soru yazma uzmanısın. Görevin, sana verilen kriterlere uygun, özgün bir YDS sorusu oluşturmak.
-      Soru Tipi: "${soruTipi}"
-      Konu: "${konu}"
-      Zorluk Seviyesi: "${zorlukSeviyesi}"
-      Cevabını MUTLAKA aşağıdaki JSON formatında döndür:
+      Sen bir YDS (Yabancı Dil Sınavı) soru yazma uzmanısın.
+      Görevin, sana verilen kriterlere uygun, özgün bir YDS sorusu oluşturmak.
+
+      **KRİTİK TALİMATLAR:**
+      1.  **Dil:** Soru metni, seçenekler ve doğru cevap MUTLAKA **İNGİLİZCE** olmalıdır.
+      2.  **Açıklama Dili:** Sadece "kisaAciklama" bölümü **TÜRKÇE** olabilir.
+      3.  **Format:** Cevabını MUTLAKA aşağıdaki JSON formatında, başka hiçbir metin eklemeden döndür.
+
+      **Soru Kriterleri:**
+      *   **Soru Tipi:** "${soruTipi}"
+      *   **Konu:** "${konu}"
+      *   **Zorluk Seviyesi:** "${zorlukSeviyesi}"
+
+      **İstenen JSON Yapısı:**
       {
-        "yeniSoru": "Oluşturduğun tam soru metni (paragraf ise paragraf, cümle ise cümle)...",
-        "secenekler": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
-        "dogruCevap": "Doğru seçeneğin harfi ve içeriği (Örn: C) option text)",
-        "kisaAciklama": "Doğru cevabın neden doğru olduğuna dair 1-2 cümlelik kısa bir açıklama."
+        "yeniSoru": "Oluşturduğun tam İNGİLİZCE soru metni (paragraf ise paragraf, cümle ise cümle)...",
+        "secenekler": [
+            "A) İngilizce seçenek 1...", 
+            "B) İngilizce seçenek 2...", 
+            "C) İngilizce seçenek 3...", 
+            "D) İngilizce seçenek 4...", 
+            "E) İngilizce seçenek 5..."
+        ],
+        "dogruCevap": "Doğru seçeneğin harfi ve İNGİLİZCE içeriği (Örn: C) the correct option)",
+        "kisaAciklama": "Doğru cevabın neden doğru olduğuna dair 1-2 cümlelik kısa ve TÜRKÇE bir açıklama."
       }
     `;
+
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
     const cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
