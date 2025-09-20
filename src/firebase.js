@@ -5,12 +5,12 @@ import { getFirestore } from "firebase/firestore";
 
 // Adım 1'de aldığın firebaseConfig objesini buraya yapıştır
 const firebaseConfig = {
-  apiKey: "AIzaSyAJAVIn3skPFRtdZ5ZU61r-M4vv_2h36AE",
-  authDomain: "yds-analyzer-app.firebaseapp.com",
-  projectId: "yds-analyzer-app",
-  storageBucket: "yds-analyzer-app.firebasestorage.app",
-  messagingSenderId: "347469498705",
-  appId: "1:347469498705:web:a90d928c52a02d12116b70"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 // Firebase'i başlat
