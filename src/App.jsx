@@ -1,5 +1,6 @@
 // src/App.jsx
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from './firebase';
 
@@ -10,29 +11,74 @@ import DashboardPage from './pages/DashboardPage';
 import Navbar from './components/Navbar';
 import './App.css';
 
+// Kullanıcı giriş yapmışken erişilebilen, korumalı rotaları yöneten bir bileşen
+const ProtectedRoute = ({ user, children }) => {
+  if (!user) {
+    // Eğer kullanıcı yoksa, giriş sayfasına yönlendir
+    return <Navigate to="/auth" replace />;
+  }
+  // Kullanıcı varsa, istenen sayfayı göster
+  return children;
+};
+
+
 function App() {
   const [user, loading, error] = useAuthState(auth);
   
   if (loading) {
-    return <div>Yükleniyor...</div>; // Veya daha şık bir yükleme ekranı
+    // Firebase kimlik doğrulama durumunu kontrol ederken gösterilecek ekran
+    return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+            Yükleniyor...
+        </div>
+    );
   }
 
   if (error) {
-    return <div>Bir hata oluştu: {error.message}</div>
-  }
-
-  if (!user) {
-    return <Auth />;
+    // Beklenmedik bir hata olursa
+    return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+            Bir hata oluştu: {error.message}
+        </div>
+    )
   }
 
   return (
     <>
-      <Navbar />
+      {user && <Navbar />} 
       <main>
           <Routes>
-              <Route path="/" element={<YdsAnalyzerApp user={user} />} />
-              <Route path="/history" element={<HistoryPage user={user} />} />
-              <Route path="/dashboard" element={<DashboardPage user={user} />} />
+            
+            <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/" replace />} />
+            
+            
+            <Route 
+              path="/" 
+              element={
+                <ProtectedRoute user={user}>
+                  <YdsAnalyzerApp user={user} />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/history" 
+              element={
+                <ProtectedRoute user={user}>
+                  <HistoryPage user={user} />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute user={user}>
+                  <DashboardPage user={user} />
+                </ProtectedRoute>
+              } 
+            />
+
+            
+            <Route path="*" element={<Navigate to={user ? "/" : "/auth"} replace />} />
           </Routes>
       </main>
     </>
