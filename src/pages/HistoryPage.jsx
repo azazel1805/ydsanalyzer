@@ -1,31 +1,27 @@
 // src/pages/HistoryPage.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, getDocs, doc, updateDoc } from "firebase/firestore";
-// Analiz detayını göstermek için ana sayfadaki bileşenleri yeniden kullanıyoruz
-import AnalysisResultView from '../components/AnalysisResultView'; 
+import { renderWithClickableKalips } from '../components/helpers.jsx';
 import KalipModal from '../components/KalipModal';
 
 // Geçmiş Analiz Detaylarını Gösteren Modal Bileşeni
+// Bu, AnalysisResultView'a daha basit bir alternatiftir.
 const AnalysisDetailModal = ({ analysis, onClose, onKalipClick }) => {
     if (!analysis) return null;
+    const result = analysis.analysisData;
 
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content" style={{ maxWidth: '800px' }} onClick={(e) => e.stopPropagation()}>
                 <h2 style={{marginTop: 0}}>Analiz Detayı</h2>
-                {/* AnalysisResultView bileşenini burada yeniden kullanıyoruz! */}
-                <AnalysisResultView 
-                    result={analysis.analysisData}
-                    onKalipClick={onKalipClick}
-                    // Bu modalde bu fonksiyonlara ihtiyacımız yok, boş fonksiyonlar yolluyoruz
-                    originalQuestion={analysis.questionText}
-                    setAnalysisResult={() => {}}
-                    setBenzerSoru={() => {}}
-                    setIsGenerating={() => {}}
-                    isGenerating={false}
-                />
-                 <button onClick={onClose} style={{ marginTop: '1rem', backgroundColor: 'var(--primary-color)', color: 'white', border: 'none', padding: '0.8rem 1.5rem', borderRadius: '8px', cursor: 'pointer' }}>
+                <div className="analysis-result">
+                    <div className='result-section'><h2>Soru Tipi</h2><p><strong>{result.soruTipi}</strong></p></div>
+                    <div className='result-section'><h2>Zorluk Seviyesi</h2><p><strong>{result.zorlukSeviyesi || "N/A"}</strong></p></div>
+                    <div className='result-section'><h2>Detaylı Açıklama</h2>{renderWithClickableKalips(result.detayliAciklama, result.kalıplar, onKalipClick)}<p style={{marginTop: '1rem'}}><strong>Doğru Cevap: {result.dogruCevap}</strong></p></div>
+                    <div className='result-section'><h3>Diğer Seçeneklerin Analizi</h3>{result.digerSecenekler.map((secenek, index) => (<div key={index} style={{marginBottom: '0.8rem'}}><strong>{secenek.secenek}: </strong><span dangerouslySetInnerHTML={{ __html: secenek.aciklama.replace(/\n/g, '<br />') }} /></div>))}</div>
+                </div>
+                <button onClick={onClose} style={{ marginTop: '1rem', backgroundColor: 'var(--primary-color)', color: 'white', border: 'none', padding: '0.8rem 1.5rem', borderRadius: '8px', cursor: 'pointer' }}>
                     Kapat
                 </button>
             </div>
@@ -33,25 +29,50 @@ const AnalysisDetailModal = ({ analysis, onClose, onKalipClick }) => {
     );
 };
 
-
 function HistoryPage({ user }) {
     const [analyses, setAnalyses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    
-    // YENİ STATE'LER: Seçili analizi ve kalıbı tutmak için
     const [selectedAnalysis, setSelectedAnalysis] = useState(null);
     const [selectedKalip, setSelectedKalip] = useState(null);
 
-    useEffect(() => {
-        // ... (Veri çekme mantığı aynı, değişiklik yok)
-        if (!user) { setLoading(false); return; }
-        const fetchAnalyses = async () => { /* ... önceki cevapla aynı ... */ };
-        fetchAnalyses();
+    // useCallback ile fonksiyonun gereksiz yere yeniden oluşturulmasını engelliyoruz.
+    const fetchAnalyses = useCallback(async () => {
+        if (!user) {
+            setLoading(false);
+            return;
+        }
+        setLoading(true);
+        setError('');
+        try {
+            const q = query(
+                collection(db, "analyses"), 
+                where("userId", "==", user.uid),
+                orderBy("createdAt", "desc")
+            );
+            const querySnapshot = await getDocs(q);
+            
+            const userAnalyses = querySnapshot.docs.map(doc => ({ 
+                id: doc.id, 
+                ...doc.data() 
+            }));
+            
+            setAnalyses(userAnalyses);
+        } catch (err) {
+            console.error("Geçmiş getirilirken hata:", err);
+            setError("Geçmiş analizler yüklenirken bir hata oluştu.");
+        } finally {
+            setLoading(false);
+        }
     }, [user]);
 
+    // Sadece component ilk yüklendiğinde veri çek.
+    useEffect(() => {
+        fetchAnalyses();
+    }, [fetchAnalyses]);
+
     const toggleMistake = async (e, id, currentStatus) => {
-        e.stopPropagation(); // Butona tıklandığında arkadaki div'in tıklanmasını engelle
+        e.stopPropagation();
         const docRef = doc(db, "analyses", id);
         try {
             await updateDoc(docRef, { isMistake: !currentStatus });
@@ -73,29 +94,21 @@ function HistoryPage({ user }) {
             ) : (
                 <div className="history-list">
                     {analyses.map(analysis => (
-                        <div 
-                            key={analysis.id} 
-                            className="history-item" 
-                            onClick={() => setSelectedAnalysis(analysis)} // Tıklandığında modalı aç
-                        >
+                        <div key={analysis.id} className="history-item" onClick={() => setSelectedAnalysis(analysis)}>
                             <p className="history-question"><strong>Soru:</strong> {(analysis.questionText && typeof analysis.questionText === 'string') ? analysis.questionText.substring(0, 150) + '...' : 'Soru metni mevcut değil...'}</p>
                             <div className="history-details">
                                 <span><strong>Tip:</strong> {analysis.analysisData?.soruTipi || 'N/A'}</span>
                                 <span><strong>Zorluk:</strong> {analysis.analysisData?.zorlukSeviyesi || 'N/A'}</span>
                                 <span><strong>Tarih:</strong> {analysis.createdAt ? new Date(analysis.createdAt.toDate()).toLocaleDateString('tr-TR') : 'Bilinmiyor'}</span>
                             </div>
-                            <button 
-                                onClick={(e) => toggleMistake(e, analysis.id, analysis.isMistake)} 
-                                className={`mistake-toggle ${analysis.isMistake ? 'is-mistake' : ''}`}
-                            >
+                            <button onClick={(e) => toggleMistake(e, analysis.id, analysis.isMistake)} className={`mistake-toggle ${analysis.isMistake ? 'is-mistake' : ''}`}>
                                 {analysis.isMistake ? '✓ Hata Defterinde' : '+ Hata Defterine Ekle'}
                             </button>
                         </div>
                     ))}
                 </div>
             )}
-
-            {/* Seçili analiz varsa modal'ı göster */}
+            
             <AnalysisDetailModal 
                 analysis={selectedAnalysis} 
                 onClose={() => setSelectedAnalysis(null)}
