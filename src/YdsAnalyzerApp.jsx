@@ -84,6 +84,13 @@ function App() {
         const response = await axios.post('/.netlify/functions/analyze', payload);
         setAnalysisResult(response.data);
         setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+      await addDoc(collection(db, "analyses"), {
+                userId: user.uid, // Giriş yapan kullanıcının ID'si
+                createdAt: serverTimestamp(), // Sunucu zamanı
+                questionText: payload.text || 'Görselden analiz edildi',
+                analysisData: response.data, // Gemini'den gelen JSON
+                isMistake: false
+            });
     } catch (err) {
         const errorMessage = err.response?.data?.error || 'Analiz sırasında beklenmedik bir hata oluştu.';
         setError(errorMessage);
