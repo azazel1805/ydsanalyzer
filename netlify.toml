@@ -2,25 +2,23 @@
   command = "npm run build"
   publish = "dist"
   functions = "netlify/functions"
-  
-  # Güvenlik taramasından hariç tutulacak anahtarları BURAYA yazıyoruz.
-  # Bu, ana [build] bloğunun bir parçasıdır.
-  SECRETS_SCAN_OMIT_KEYS = [
-    "VITE_FIREBASE_API_KEY",
-    "VITE_FIREBASE_APP_ID",
-    "VITE_FIREBASE_AUTH_DOMAIN",
-    "VITE_FIREBASE_MESSAGING_SENDER_ID",
-    "VITE_FIREBASE_PROJECT_ID",
-    "VITE_FIREBASE_STORAGE_BUCKET"
-  ]
 
+# Bu redirect kuralı SPA (Tek Sayfalı Uygulama) yönlendirmesi için gerekli
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# API fonksiyonları için yönlendirme
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
 
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+# === YENİ VE EN ÖNEMLİ BÖLÜM ===
+# Bu kural, tüm sayfalara bir Cross-Origin-Opener-Policy başlığı ekler.
+# Bu, Firebase Auth popup'ının ana pencereyle iletişim kurmasına izin verir.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cross-Origin-Opener-Policy = "same-origin-allow-popups"
