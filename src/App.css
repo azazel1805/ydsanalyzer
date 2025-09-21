@@ -346,3 +346,64 @@ input[type="file"] { display: none; }
     color: white; 
     border-color: var(--success-color);
 }
+/* === HISTORY PAGE & MODAL İYİLEŞTİRMELERİ === */
+
+/* Geçmiş Kartlarına Odaklanma Efekti */
+.history-item:focus-within {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Modal İçeriği Stilleri */
+.modal-content .analysis-result {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.modal-content .result-section {
+    background-color: transparent; /* Modal içinde ekstra arka plan rengine gerek yok */
+    border-left: 4px solid var(--primary-light);
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.modal-content .result-section h2,
+.modal-content .result-section h3,
+.modal-content .result-section h5,
+.modal-content .result-section h6 {
+    color: var(--text-color); /* Başlık renklerini daha yumuşak yapalım */
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-bottom: none; /* Alt çizgileri kaldıralım, daha temiz bir görünüm için */
+    padding-bottom: 0;
+    margin-bottom: 0.75rem;
+}
+
+/* Modal Kapatma Butonu */
+.modal-close-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: #f1f1f1;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.modal-close-button:hover {
+    background: #e0e0e0;
+    transform: rotate(90deg);
+}
+
+.modal-close-button svg {
+    width: 20px;
+    height: 20px;
+    stroke: #555;
+}
