@@ -233,22 +233,23 @@ input[type="file"] { display: none; }
    ========================================================================== */
 @media (min-width: 640px) {
   main {
-    padding: 1rem; /* Mobil cihazlar için padding'i azalt */
+    padding: 0.5rem; /* Mobil cihazlar için padding'i azalt */
   }
   .App, .page-container {
-    padding: 6rem; /* Masaüstünde padding artırılabilir */
+    padding: 8rem; /* Masaüstünde padding artırılabilir */
   }
   h1 {
     font-size: 2.25rem;
   }
   .modal-overlay {
-    padding: 6rem 1rem;
+    padding: 8rem 1rem;
   }
   .modal-content {
-    padding: 6rem;
+    padding: 8rem;
   }
   .dashboard-grid {
     grid-template-columns: repeat(2, 1fr);
+     padding: 8rem;
   }
   .nav-menu {
     display: flex;
