@@ -223,7 +223,7 @@ input[type="file"] { display: none; }
   .modal-overlay { padding: 4rem 2rem; }
   .modal-content { padding: 2.5rem; }
   .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
-  .nav-menu { display: flex; } /* Menüyü büyük ekranda göster */
+  .nav-menu { display: auto; } /* Menüyü büyük ekranda göster */
 }
 
 @media (min-width: 1024px) {
