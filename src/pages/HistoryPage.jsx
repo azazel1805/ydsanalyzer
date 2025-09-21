@@ -1,4 +1,3 @@
-// src/pages/HistoryPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, getDocs, doc, updateDoc } from "firebase/firestore";
@@ -40,6 +39,7 @@ const renderWithClickableKalips = (text, kalips, onKalipClick) => {
   );
 };
 
+// Geçmiş Analiz Detaylarını Gösteren Modal Bileşeni (GÜNCELLENDİ)
 const AnalysisDetailModal = ({ analysis, onClose, onKalipClick, isActive }) => {
     if (!analysis) return null;
     const result = analysis.analysisData;
@@ -52,6 +52,16 @@ const AnalysisDetailModal = ({ analysis, onClose, onKalipClick, isActive }) => {
                 </button>
                 <h2 style={{marginTop: 0, paddingRight: '40px'}}>Analiz Detayı</h2>
                 <div className="analysis-result">
+                    
+                    {/* === YENİ EKLENEN BÖLÜM === */}
+                    <div className='result-section' style={{backgroundColor: 'var(--primary-light)'}}>
+                        <h2>Soru Metni</h2>
+                        <p style={{whiteSpace: 'pre-wrap', fontFamily: 'monospace'}}>
+                            <strong>{analysis.questionText}</strong>
+                        </p>
+                    </div>
+                    {/* === YENİ BÖLÜM SONU === */}
+
                     <div className='result-section'><h2>Soru Tipi</h2><p><strong>{result.soruTipi}</strong></p></div>
                     <div className='result-section'><h2>Zorluk Seviyesi</h2><p><strong>{result.zorlukSeviyesi || "N/A"}</strong></p></div>
                     <div className='result-section'><h2>Detaylı Açıklama</h2>{renderWithClickableKalips(result.detayliAciklama, result.kalıplar, onKalipClick)}<p style={{marginTop: '1rem'}}><strong>Doğru Cevap: {result.dogruCevap}</strong></p></div>
@@ -61,6 +71,7 @@ const AnalysisDetailModal = ({ analysis, onClose, onKalipClick, isActive }) => {
         </div>
     );
 };
+
 
 // === ANA HISTORYPAGE BİLEŞENİ ===
 function HistoryPage({ user }) {
