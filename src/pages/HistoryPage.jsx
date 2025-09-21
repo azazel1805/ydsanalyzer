@@ -1,10 +1,10 @@
+// src/pages/HistoryPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, getDocs, doc, updateDoc } from "firebase/firestore";
 
 // === YARDIMCI BİLEŞENLER VE FONKSİYONLAR ===
 
-// KalipModal bileşeni
 const KalipModal = ({ kalip, onClose, isActive }) => {
   if (!kalip) return null;
   return (
@@ -20,7 +20,6 @@ const KalipModal = ({ kalip, onClose, isActive }) => {
   );
 };
 
-// Tıklanabilir kalıp render fonksiyonu
 const renderWithClickableKalips = (text, kalips, onKalipClick) => {
   if (!text) return null;
   if (!kalips || kalips.length === 0) {
@@ -41,7 +40,6 @@ const renderWithClickableKalips = (text, kalips, onKalipClick) => {
   );
 };
 
-// Geçmiş Analiz Detaylarını Gösteren Modal Bileşeni
 const AnalysisDetailModal = ({ analysis, onClose, onKalipClick, isActive }) => {
     if (!analysis) return null;
     const result = analysis.analysisData;
@@ -64,7 +62,6 @@ const AnalysisDetailModal = ({ analysis, onClose, onKalipClick, isActive }) => {
     );
 };
 
-
 // === ANA HISTORYPAGE BİLEŞENİ ===
 function HistoryPage({ user }) {
     const [analyses, setAnalyses] = useState([]);
@@ -74,25 +71,13 @@ function HistoryPage({ user }) {
     const [selectedKalip, setSelectedKalip] = useState(null);
 
     const fetchAnalyses = useCallback(async () => {
-        if (!user) {
-            setLoading(false);
-            return;
-        }
+        if (!user) { setLoading(false); return; }
         setLoading(true);
         setError('');
         try {
-            const q = query(
-                collection(db, "analyses"), 
-                where("userId", "==", user.uid),
-                orderBy("createdAt", "desc")
-            );
+            const q = query(collection(db, "analyses"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
             const querySnapshot = await getDocs(q);
-            
-            const userAnalyses = querySnapshot.docs.map(doc => ({ 
-                id: doc.id, 
-                ...doc.data() 
-            }));
-            
+            const userAnalyses = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setAnalyses(userAnalyses);
         } catch (err) {
             console.error("Geçmiş getirilirken hata:", err);
@@ -112,9 +97,7 @@ function HistoryPage({ user }) {
         } else {
             document.body.classList.remove('modal-open');
         }
-        return () => {
-            document.body.classList.remove('modal-open');
-        };
+        return () => { document.body.classList.remove('modal-open'); };
     }, [selectedAnalysis, selectedKalip]);
 
     const toggleMistake = async (e, id, currentStatus) => {
