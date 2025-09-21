@@ -231,58 +231,80 @@ input[type="file"] { display: none; }
 /* ==========================================================================
    7. MASAÜSTÜ VE BÜYÜK EKRAN STİLLERİ (MEDIA QUERIES)
    ========================================================================== */
-/* Mobil cihazlar için varsayılan stil (640px altı) */
-main {
-  padding: 0.5rem; /* Minimum padding mobil için */
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.App, .page-container {
-  width: 100%;
-  max-width: 100%; /* Mobilde tam genişlik */
-  margin: 0 auto;
-  padding: 0.5rem; /* Mobil için minimum padding */
-  box-sizing: border-box;
-}
-
-.dashboard-grid {
-  width: 100%;
-  padding: 0.5rem;
-  grid-template-columns: 1fr; /* Mobilde tek sütun */
-}
-
+/* Varsayılan stil (mobil cihazlar, 640px altı) */
 .nav-menu {
-  display: none; /* Mobilde menüyü gizle, gerekirse toggle ile aç */
+  display: flex; /* Mobil cihazlarda menüyü varsayılan olarak göster */
+  flex-direction: column; /* Mobil için dikey düzen */
+  align-items: center;
+  list-style: none;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+  gap: 1rem; /* Menü öğeleri arası boşluk */
+}
+
+/* Mobil menüyü gizlemek için toggle sınıfı (isteğe bağlı) */
+.nav-menu.hidden {
+  display: none; /* JavaScript ile toggle için */
 }
 
 /* Tablet ve küçük masaüstü (640px ve üstü) */
 @media (min-width: 640px) {
   main {
-    padding: 1rem; /* Hafif artan padding */
+    padding: 1rem;
   }
   .App, .page-container {
-    max-width: 800px; /* Orta seviye genişlik */
-    padding: 2rem; /* Dengeli padding */
+    max-width: 800px;
+    padding: 2rem;
   }
   h1 {
     font-size: 2.25rem;
   }
   .modal-overlay {
-    padding: 2rem 1rem; /* Uygun padding */
+    padding: 2rem 1rem;
   }
   .modal-content {
     padding: 2rem;
   }
   .dashboard-grid {
-    grid-template-columns: repeat(2, 1fr); /* İki sütun */
+    grid-template-columns: repeat(2, 1fr);
     padding: 2rem;
   }
   .nav-menu {
-    display: flex; /* Menüyü göster */
+    display: flex; /* 640px ve üstü için yatay düzen */
+    flex-direction: row; /* Yatay hizalama */
+    margin: 0 auto; /* Ortala */
+    gap: 1.5rem; /* Öğeler arası boşluk */
   }
 }
 
+/* Büyük ekranlar (1024px ve üstü) */
+@media (min-width: 1024px) {
+  main {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .App, .page-container {
+    max-width: 1000px;
+    padding: 3rem;
+  }
+  .modal-overlay {
+    padding: 3rem 2rem;
+  }
+  .modal-content {
+    padding: 3rem;
+  }
+  .dashboard-grid {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    padding: 3rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .nav-menu {
+    gap: 2rem; /* Büyük ekranlarda daha fazla boşluk */
+  }
+}
 /* Büyük ekranlar (1024px ve üstü) */
 @media (min-width: 1024px) {
   main {
