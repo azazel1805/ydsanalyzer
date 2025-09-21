@@ -178,42 +178,55 @@ input[type="file"] { display: none; }
    ========================================================================== */
 
 /* NAVBAR */
-.navbar {
-  background-color: var(--container-bg);
-  height: 70px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 1rem;
-  position: sticky;
-  top: 0;
-  z-index: 999;
-  box-shadow: var(--shadow);
-  border-bottom: 1px solid #E5E7EB;
-  width: 100%;
-  overflow-x: hidden; /* Navbar taşmasını önler */
-}
-
-.nav-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 70px;
-  width: 100%;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 1rem;
-  box-sizing: border-box; /* Padding'in taşmasını önler */
-}
+.navbar { background-color: var(--container-bg); height: 70px; display: flex; justify-content: center; align-items: center; font-size: 1rem; position: sticky; top: 0; z-index: 999; box-shadow: var(--shadow); border-bottom: 1px solid #E5E7EB; width: 100%; }
+.nav-container { display: flex; justify-content: space-between; align-items: center; height: 70px; width: 100%; max-width: 1100px; margin: 0 auto; padding: 0 1rem; }
+.nav-logo { color: var(--primary-color); cursor: pointer; text-decoration: none; font-size: 1.25rem; font-weight: bold; }
+/* NAVBAR STYLES bölümünde */
 
 .nav-menu {
   display: flex;
   align-items: center;
   list-style: none;
   text-align: center;
-  margin: 0 auto; /* Menüyü tam ortalamak için */
+  margin: 0;
   padding: 0;
+
+  /* YENİ EKLENEN KURALLAR */
+  margin-left: auto; /* Soldaki tüm boşluğu al */
+  margin-right: auto; /* Sağdaki tüm boşluğu al */
 }
+.nav-item { height: 70px; display: flex; align-items: center; }
+.nav-links { color: var(--text-muted); display: flex; align-items: center; text-decoration: none; padding: 0 0.75rem; height: 100%; cursor: pointer; font-weight: 500; border-bottom: 3px solid transparent; transition: all 0.2s ease-out; }
+.nav-links:hover { color: var(--primary-color); }
+.nav-links.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
+.nav-button { background-color: var(--primary-light); color: var(--primary-color); border: 1px solid var(--primary-color); padding: 6px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.nav-button:hover { background-color: var(--primary-color); color: white; }
+
+/* AUTH PAGE */
+.auth-container { display: flex; align-items: center; justify-content: center; min-height: 80vh; }
+.auth-widget { width: 100%; max-width: 420px; padding: 2rem; }
+.auth-widget header { text-align: center; margin-bottom: 2rem; }
+.auth-widget form input { width: 100%; padding: 0.8rem; margin-bottom: 1rem; border-radius: 6px; border: 1px solid var(--border-color); }
+.auth-widget .auth-buttons { display: flex; gap: 1rem; }
+.auth-widget .auth-buttons button { flex: 1; padding: 0.8rem; border: none; border-radius: 6px; background-color: var(--primary-color); color: white; font-weight: 600; cursor: pointer; }
+.auth-widget .social-login { text-align: center; margin-top: 1.5rem; }
+
+/* HISTORY PAGE */
+.history-list { display: flex; flex-direction: column; gap: 1rem; }
+.history-item { background: #fff; padding: 1.5rem; border-radius: 8px; box-shadow: var(--shadow); border-left: 4px solid var(--primary-color); cursor: pointer; transition: all 0.2s ease-in-out; position: relative; }
+.history-item:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-left-color: var(--success-color); }
+.history-question { font-weight: 500; margin-top: 0; margin-bottom: 1rem; padding-right: 120px; }
+.history-details { display: flex; flex-wrap: wrap; gap: 1.5rem; color: var(--text-muted); font-size: 0.8rem; padding-top: 1rem; border-top: 1px solid #eee; }
+.mistake-toggle { background-color: #f0f0f0; border: 1px solid #ddd; color: #555; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 600; cursor: pointer; transition: all 0.2s; position: absolute; top: 1.25rem; right: 1rem; font-size: 0.8rem; }
+.mistake-toggle:hover { background-color: #e0e0e0; }
+.mistake-toggle.is-mistake { background-color: var(--success-color); color: white; border-color: var(--success-color); }
+
+/* DASHBOARD PAGE */
+.dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+.stat-card { background-color: var(--container-bg); padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow); border: 1px solid #E5E7EB; text-align: center; }
+.stat-card h2 { margin-top: 0; font-size: 1.2rem; color: var(--text-muted); }
+.stat-number { font-size: 3rem; font-weight: 700; color: var(--primary-color); margin: 0.5rem 0 0 0; }
+.stat-card-large { grid-column: 1 / -1; background-color: var(--container-bg); padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow); border: 1px solid #E5E7EB; }
 
 /* ==========================================================================
    7. MASAÜSTÜ VE BÜYÜK EKRAN STİLLERİ (MEDIA QUERIES)
