@@ -179,7 +179,7 @@ input[type="file"] { display: none; }
 .navbar { background-color: var(--container-bg); height: 70px; display: flex; justify-content: center; align-items: center; font-size: 1rem; position: sticky; top: 0; z-index: 999; box-shadow: var(--shadow); border-bottom: 1px solid #E5E7EB; width: 100%; }
 .nav-container { display: flex; justify-content: space-between; align-items: center; height: 70px; width: 100%; max-width: 1100px; margin: 0 auto; padding: 0 1rem; }
 .nav-logo { color: var(--primary-color); cursor: pointer; text-decoration: none; font-size: 1.25rem; font-weight: bold; }
-.nav-menu { display: none; } /* Mobilde menüyü gizle, büyük ekranda göster */
+.nav-menu { display: flex; } /* Mobilde menüyü gizle, büyük ekranda göster */
 .nav-item { height: 70px; display: flex; align-items: center; }
 .nav-links { color: var(--text-muted); display: flex; align-items: center; text-decoration: none; padding: 0 0.75rem; height: 100%; cursor: pointer; font-weight: 500; border-bottom: 3px solid transparent; transition: all 0.2s ease-out; }
 .nav-links:hover { color: var(--primary-color); }
