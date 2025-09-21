@@ -2,19 +2,19 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, getDocs, doc, updateDoc } from "firebase/firestore";
 
-// === YARDIMCI BİLEŞENLER VE FONKSİYONLAR (Doğrudan bu dosyanın içine alıyoruz) ===
+// === YARDIMCI BİLEŞENLER VE FONKSİYONLAR ===
 
 // KalipModal bileşeni
-const KalipModal = ({ kalip, onClose }) => {
+const KalipModal = ({ kalip, onClose, isActive }) => {
   if (!kalip) return null;
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className={`modal-overlay ${isActive ? 'active' : ''}`} onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <button className="modal-close-button" onClick={onClose}>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
         <h3>{kalip.kalip}</h3>
         <p dangerouslySetInnerHTML={{ __html: kalip.aciklama.replace(/\n/g, '<br />') }} />
-        <button onClick={onClose} style={{ marginTop: '1rem', backgroundColor: 'var(--primary-color)', color: 'white', border: 'none', padding: '0.8rem 1.5rem', borderRadius: '8px', cursor: 'pointer' }}>
-          Kapat
-        </button>
       </div>
     </div>
   );
@@ -42,23 +42,23 @@ const renderWithClickableKalips = (text, kalips, onKalipClick) => {
 };
 
 // Geçmiş Analiz Detaylarını Gösteren Modal Bileşeni
-const AnalysisDetailModal = ({ analysis, onClose, onKalipClick }) => {
+const AnalysisDetailModal = ({ analysis, onClose, onKalipClick, isActive }) => {
     if (!analysis) return null;
     const result = analysis.analysisData;
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
+        <div className={`modal-overlay ${isActive ? 'active' : ''}`} onClick={onClose}>
             <div className="modal-content" style={{ maxWidth: '800px' }} onClick={(e) => e.stopPropagation()}>
-                <h2 style={{marginTop: 0}}>Analiz Detayı</h2>
+                <button className="modal-close-button" onClick={onClose}>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+                <h2 style={{marginTop: 0, paddingRight: '40px'}}>Analiz Detayı</h2>
                 <div className="analysis-result">
                     <div className='result-section'><h2>Soru Tipi</h2><p><strong>{result.soruTipi}</strong></p></div>
                     <div className='result-section'><h2>Zorluk Seviyesi</h2><p><strong>{result.zorlukSeviyesi || "N/A"}</strong></p></div>
                     <div className='result-section'><h2>Detaylı Açıklama</h2>{renderWithClickableKalips(result.detayliAciklama, result.kalıplar, onKalipClick)}<p style={{marginTop: '1rem'}}><strong>Doğru Cevap: {result.dogruCevap}</strong></p></div>
                     {result.digerSecenekler && <div className='result-section'><h3>Diğer Seçeneklerin Analizi</h3>{result.digerSecenekler.map((secenek, index) => (<div key={index} style={{marginBottom: '0.8rem'}}><strong>{secenek.secenek}: </strong><span dangerouslySetInnerHTML={{ __html: secenek.aciklama.replace(/\n/g, '<br />') }} /></div>))}</div>}
                 </div>
-                <button onClick={onClose} style={{ marginTop: '1rem', backgroundColor: 'var(--primary-color)', color: 'white', border: 'none', padding: '0.8rem 1.5rem', borderRadius: '8px', cursor: 'pointer' }}>
-                    Kapat
-                </button>
             </div>
         </div>
     );
@@ -106,6 +106,17 @@ function HistoryPage({ user }) {
         fetchAnalyses();
     }, [fetchAnalyses]);
 
+    useEffect(() => {
+        if (selectedAnalysis || selectedKalip) {
+            document.body.classList.add('modal-open');
+        } else {
+            document.body.classList.remove('modal-open');
+        }
+        return () => {
+            document.body.classList.remove('modal-open');
+        };
+    }, [selectedAnalysis, selectedKalip]);
+
     const toggleMistake = async (e, id, currentStatus) => {
         e.stopPropagation();
         const docRef = doc(db, "analyses", id);
@@ -148,8 +159,13 @@ function HistoryPage({ user }) {
                 analysis={selectedAnalysis} 
                 onClose={() => setSelectedAnalysis(null)}
                 onKalipClick={setSelectedKalip}
+                isActive={!!selectedAnalysis}
             />
-            <KalipModal kalip={selectedKalip} onClose={() => setSelectedKalip(null)} />
+            <KalipModal 
+                kalip={selectedKalip} 
+                onClose={() => setSelectedKalip(null)}
+                isActive={!!selectedKalip}
+            />
         </div>
     );
 }
