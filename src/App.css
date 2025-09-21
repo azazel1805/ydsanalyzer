@@ -231,33 +231,79 @@ input[type="file"] { display: none; }
 /* ==========================================================================
    7. MASAÜSTÜ VE BÜYÜK EKRAN STİLLERİ (MEDIA QUERIES)
    ========================================================================== */
+/* Mobil cihazlar için varsayılan stil (640px altı) */
+main {
+  padding: 0.5rem; /* Minimum padding mobil için */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.App, .page-container {
+  width: 100%;
+  max-width: 100%; /* Mobilde tam genişlik */
+  margin: 0 auto;
+  padding: 0.5rem; /* Mobil için minimum padding */
+  box-sizing: border-box;
+}
+
+.dashboard-grid {
+  width: 100%;
+  padding: 0.5rem;
+  grid-template-columns: 1fr; /* Mobilde tek sütun */
+}
+
+.nav-menu {
+  display: none; /* Mobilde menüyü gizle, gerekirse toggle ile aç */
+}
+
+/* Tablet ve küçük masaüstü (640px ve üstü) */
 @media (min-width: 640px) {
   main {
-    padding: 0.5rem; /* Mobil cihazlar için padding'i azalt */
+    padding: 1rem; /* Hafif artan padding */
   }
   .App, .page-container {
-    padding: 8rem; /* Masaüstünde padding artırılabilir */
+    max-width: 800px; /* Orta seviye genişlik */
+    padding: 2rem; /* Dengeli padding */
   }
   h1 {
     font-size: 2.25rem;
   }
   .modal-overlay {
-    padding: 8rem 1rem;
+    padding: 2rem 1rem; /* Uygun padding */
   }
   .modal-content {
-    padding: 8rem;
+    padding: 2rem;
   }
   .dashboard-grid {
-    grid-template-columns: repeat(2, 1fr);
-     padding: 8rem;
+    grid-template-columns: repeat(2, 1fr); /* İki sütun */
+    padding: 2rem;
   }
   .nav-menu {
-    display: flex;
+    display: flex; /* Menüyü göster */
   }
 }
 
+/* Büyük ekranlar (1024px ve üstü) */
 @media (min-width: 1024px) {
+  main {
+    padding: 2rem; /* Daha fazla boşluk */
+    max-width: 1200px; /* Maksimum genişlik */
+    margin: 0 auto;
+  }
+  .App, .page-container {
+    max-width: 1000px; /* Büyük ekran için optimize */
+    padding: 3rem; /* Geniş ekranlar için yeterli padding */
+  }
+  .modal-overlay {
+    padding: 3rem 2rem; /* Büyük ekran padding */
+  }
+  .modal-content {
+    padding: 3rem;
+  }
   .dashboard-grid {
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* Dinamik sütunlar */
+    padding: 3rem;
+    max-width: 1200px; /* Genişlik sınırla */
+    margin: 0 auto;
   }
 }
