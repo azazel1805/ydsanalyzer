@@ -175,12 +175,10 @@ input[type="file"] { display: none; }
    6. SAYFA ÖZELİ STİLLER (PAGE-SPECIFIC STYLES)
    ========================================================================== */
 
-/* NAVBAR */
 .navbar {
   background-color: var(--container-bg);
   height: 70px;
   display: flex;
-  justify-content: center; /* Ortaya hizala */
   align-items: center;
   font-size: 1rem;
   position: sticky;
@@ -192,9 +190,10 @@ input[type="file"] { display: none; }
 }
 
 .nav-container {
+  position: relative; /* Menüye absolute verebilmek için */
   display: flex;
-  justify-content: center; /* Ortada tut */
   align-items: center;
+  justify-content: space-between; /* Logo sola, buton sağa */
   height: 70px;
   width: 100%;
   max-width: 1100px;
@@ -211,11 +210,13 @@ input[type="file"] { display: none; }
 }
 
 .nav-menu {
+  position: absolute; /* Ortalamayı garantiye al */
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
-  justify-content: center; /* Flex ile ortala */
   list-style: none;
-  margin: 0 auto; /* Otomatik ortalama */
+  margin: 0;
   padding: 0;
 }
 
