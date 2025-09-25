@@ -6,7 +6,7 @@ exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
   try {
     const { konu, zorlukSeviyesi, soruTipi } = JSON.parse(event.body);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     
     // === GELİŞTİRİLMİŞ PROMPT ===
     const prompt = `
