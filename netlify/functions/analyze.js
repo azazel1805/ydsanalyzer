@@ -13,7 +13,7 @@ exports.handler = async (event) => {
       return { statusCode: 400, body: JSON.stringify({ error: 'Lütfen analiz için bir metin veya resim sağlayın.' }) };
     }
     
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     let prompt;
     const multiQuestionTypes = ["Cloze Test", "Paragraf Soruları (Reading Comprehension)"];
